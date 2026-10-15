@@ -51,10 +51,19 @@ covariates:
   allow_free_additional: true
 
 channels:
-  stable: 0.1.5
-  latest: 0.1.5
+  stable: 0.1.6
+  latest: 0.1.6
 
 versions:
+  - version: 0.1.6
+    commit: 1a7f8e4d1ad761acb9bdacbfb90208d98fc1aab3
+    image_tag: sha-1a7f8e4
+    chapkit: ">=2.4.0,<3"
+    status: verified
+    # Pinned by the maintainers without the three-approval round.
+    verified_by: []
+    changelog: >-
+      Moves the R code from scripts/ to ghr/. No change to the model.
   - version: 0.1.5
     commit: d4987bc822eb5784779b932d7b08149d9609f8a9
     image_tag: sha-d4987bc
