@@ -46,17 +46,17 @@ describe("the real registry", () => {
     expect(ghr).toBeDefined();
     const stable = stableVersion(ghr!);
     expect(displayPin(ghr!, stable)).toBe(
-      "github.com/chap-models/chapkit_ghr_model@dfb2e3f",
+      "github.com/chap-models/chapkit_ghr_model@d4987bc",
     );
     expect(fullPin(ghr!, stable)).toBe(
-      "https://github.com/chap-models/chapkit_ghr_model@dfb2e3fdd25cbf7a369cf078361814056e7fe709",
+      "https://github.com/chap-models/chapkit_ghr_model@d4987bc822eb5784779b932d7b08149d9609f8a9",
     );
   });
 
   it("derives the deployable image pin from the same commit", () => {
     const ghr = registry.models.find((m) => m.id === "chapkit_ghr_model")!;
     expect(imageRef(ghr, stableVersion(ghr))).toBe(
-      "ghcr.io/chap-models/chapkit_ghr_model:sha-dfb2e3f",
+      "ghcr.io/chap-models/chapkit_ghr_model:sha-d4987bc",
     );
   });
 
