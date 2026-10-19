@@ -51,10 +51,21 @@ covariates:
   allow_free_additional: true
 
 channels:
-  stable: 0.1.6
-  latest: 0.1.6
+  stable: 0.1.7
+  latest: 0.1.7
 
 versions:
+  - version: 0.1.7
+    commit: 1748a6462eda57b9d68f7e0344ade727b975b481
+    image_tag: sha-1748a64
+    chapkit: ">=2.4.0,<3"
+    status: verified
+    # Pinned by the maintainers without the three-approval round.
+    verified_by: []
+    changelog: >-
+      Fits the rows in time, then location order, which avoids an INLA crash
+      on the iid year effect seen on one Vietnam backtest window. The rows are
+      independent in the likelihood, so the model's results are unchanged.
   - version: 0.1.6
     commit: 1a7f8e4d1ad761acb9bdacbfb90208d98fc1aab3
     image_tag: sha-1a7f8e4
