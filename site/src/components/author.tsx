@@ -25,9 +25,11 @@ export function AuthorLine({
 export function AuthorPanel({
   author,
   organization,
+  originalSource,
 }: {
   author: string;
   organization: string | null;
+  originalSource: string | null;
 }) {
   return (
     <section
@@ -42,6 +44,16 @@ export function AuthorPanel({
       </div>
       {organization ? (
         <div className="mt-1 text-[15px] text-ink-2">{organization}</div>
+      ) : null}
+      {originalSource ? (
+        <a
+          href={originalSource}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 block border-t border-line pt-3 text-[15px] font-medium text-brand hover:underline"
+        >
+          Original model ↗
+        </a>
       ) : null}
     </section>
   );

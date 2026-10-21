@@ -14,14 +14,13 @@ when it does.
 
 ## What schema_version 2 changed
 
-Version 2 tracks chapkit 2 (2.0.0 onwards, any 2.x minor). Every listed model is now a containerised
-chapkit ML service rather than an MLproject repository run through chapkit's
+Every listed model is now a containerised chapkit ML service rather than an MLproject repository run through chapkit's
 MLproject runner, and the file records what the service's own `MLServiceInfo`
 declares.
 
 | v1 | v2 |
 |---|---|
-| `maturity: stable \| experimental` | `kind: model \| template` plus `assessed_status`, the author's own chapkit `AssessedStatus` |
+| `maturity: stable \| experimental` | `kind: model \| starter` plus `assessed_status`, the author's own chapkit `AssessedStatus` |
 | — | `service_id`, the id the service registers with chap-core under |
 | `source.repository` (+ optional `mlproject_name`) | `source.repository`, `source.image`, `source.runtime_image` |
 | — | `attribution` — author, organization, citation, from the service metadata |
@@ -39,7 +38,8 @@ Two separate signals live in every file, and the site keeps them apart:
   runs as a chapkit service. This says nothing about forecast quality.
 - **`assessed_status`** — the *model authors'* own judgement, copied verbatim
   from the service's `MLServiceInfo.model_metadata.author_assessed_status`.
-  The marketplace never assigns or reinterprets it.
+  The marketplace never assigns or reinterprets it, and the site does not
+  show it.
 
 `assessed_status` uses chapkit's `AssessedStatus` scale, whose definitions
 come from chapkit itself (`src/chapkit/api/service_builder.py`):
@@ -54,14 +54,16 @@ come from chapkit itself (`src/chapkit/api/service_builder.py`):
 
 No listed model is currently self-assessed `green`.
 
-## Models and templates
+## Models and starters
 
-`kind: template` marks scaffolding — a repository whose whole purpose is to be
+`kind: starter` marks scaffolding — a repository whose whole purpose is to be
 copied when writing a model, with a placeholder regressor where the real model
-goes. Templates are listed because model authors need a reviewed, running
+goes. Starters are listed because model authors need a reviewed, running
 starting point, but they are counted, filtered and labelled separately from
 forecasting models everywhere on the site, and must never be deployed to
-produce real forecasts.
+produce real forecasts. They are called starters, not templates, because in Chap
+every installed model is already a *model template* that configurations are
+made from.
 
 ## Comparison models
 
@@ -73,8 +75,8 @@ comparison value per metric. Leave `role` out for ordinary models.
 
 Baseline models, the simple forecasts any model should beat, are built into
 chap-core and run automatically, so they are not marketplace entries and
-`comparison` is the only role an entry can set. Templates cannot have a role.
-`chap-admin install` passes the role to chap-core with the template.
+`comparison` is the only role an entry can set. Starters cannot have a role.
+`chap-admin install` passes the role to chap-core with the model template.
 
 ## Annotated example
 
@@ -87,7 +89,7 @@ service_id: my-model             # MLServiceInfo.id — the kebab-case form of
 display_name: My Model           # human-readable name for the catalog,
                                  # normalised — no "(chapkit)" suffix, no raw
                                  # repo names
-kind: model                      # model | template
+kind: model                      # model | starter
 # role: comparison               # optional; only for models others are
                                  # compared against (see Comparison models)
 assessed_status: orange          # the AUTHOR's own AssessedStatus:
@@ -96,6 +98,10 @@ assessed_status: orange          # the AUTHOR's own AssessedStatus:
 summary: >-                      # one paragraph for the catalog card and the
   What the model is and when     # top of the model page
   to use it.
+
+developed_for: >-                # optional: the disease and setting you
+  Monthly dengue cases in        # developed and tested the model on — your
+  Country X at district level.   # assessed_status only holds for this context
 
 source:
   repository: https://github.com/chap-models/my_model
@@ -107,6 +113,8 @@ attribution:                     # from MLServiceInfo.model_metadata
   organization: Some Institute   # optional
   citation: >-                   # optional
     A paper or a data citation.
+  original_source: https://...   # optional: the upstream model or package
+                                 # this service adapts
 
 compatibility:
   period_types: [monthly]        # monthly | weekly | ...

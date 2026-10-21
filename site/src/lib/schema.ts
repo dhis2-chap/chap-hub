@@ -6,7 +6,7 @@ import { z } from "zod";
  * file violates it, so a model PR gets a machine check before the three
  * maintainer reviews.
  *
- * schema_version 2 tracks chapkit 2: a listed model is a containerised
+ * schema_version 2: a listed model is a containerised
  * chapkit ML service, so a pin carries both a commit and the image tag built
  * from it, and the file records what the service's own MLServiceInfo
  * declares — service id, prediction-period bounds, required covariates,
@@ -44,7 +44,7 @@ export const ASSESSED_STATUSES = [
 ] as const;
 
 /** Real forecasting model, or scaffolding to copy when writing one. */
-export const MODEL_KINDS = ["model", "template"] as const;
+export const MODEL_KINDS = ["model", "starter"] as const;
 
 /**
  * A model's role as a reference in Chap evaluations. `comparison` flags a
@@ -102,6 +102,11 @@ export const modelSchema = z
     /** The author's own AssessedStatus, not a marketplace verdict. */
     assessed_status: z.enum(ASSESSED_STATUSES),
     summary: z.string().min(1),
+    /**
+     * The disease and setting the authors developed and tested the model on,
+     * in their words. An assessment only holds for this context.
+     */
+    developed_for: z.string().min(1).optional(),
     source: z.object({
       repository: z.string().url(),
       /** Published chapkit service image, without a tag. */
@@ -114,6 +119,8 @@ export const modelSchema = z
       author: z.string().min(1),
       organization: z.string().min(1).optional(),
       citation: z.string().min(1).optional(),
+      /** The upstream model or package this service adapts, if any. */
+      original_source: z.string().url().optional(),
     }),
     compatibility: z.object({
       period_types: z.array(z.string()).min(1),
@@ -138,11 +145,11 @@ export const modelSchema = z
     configurations: z.record(z.string(), configurationSchema).default({}),
   })
   .superRefine((model, ctx) => {
-    if (model.role && model.kind === "template") {
+    if (model.role && model.kind === "starter") {
       ctx.addIssue({
         code: "custom",
         path: ["role"],
-        message: "a template is not a forecasting model and cannot be a comparison model",
+        message: "a starter is not a forecasting model and cannot be a comparison model",
       });
     }
 

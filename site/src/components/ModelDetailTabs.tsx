@@ -5,7 +5,7 @@ import { useState, type KeyboardEvent, type ReactNode } from "react";
 import { IconWarningFilled24 } from "@dhis2/ui-icons";
 import { BENCHMARKS_LIVE } from "@/lib/flags";
 import type { ModelDetailView } from "@/lib/views";
-import { AssessedStatusBadge, ChannelChip, StatusBadge } from "./badges";
+import { ChannelChip, StatusBadge } from "./badges";
 import { CodePanel } from "./CodePanel";
 import { CopyButton } from "./copy";
 import { ComparisonChart, CrpsByHorizonChart } from "./charts";
@@ -26,6 +26,13 @@ const H2 = "mb-2 font-brand text-[22px] font-medium text-ink";
 const LEDE = "mb-6 max-w-[70ch] text-[15px] leading-[1.6] text-ink-2";
 const Code = ({ children }: { children: ReactNode }) => (
   <code className="font-mono text-[14px] text-ink">{children}</code>
+);
+
+/** The MLServiceInfo / config field a value comes from, as chapkit and chap-core name it. */
+const Field = ({ name }: { name: string }) => (
+  <span className="block font-mono text-[12px] font-normal text-ink-3">
+    {name}
+  </span>
 );
 
 /** A DHIS2 NoticeBox, warning variant (yellow700 icon). */
@@ -55,35 +62,47 @@ function OverviewTab({
   return (
     <div className="grid items-start gap-10 lg:grid-cols-[1.5fr_1fr]">
       <div className="min-w-0">
-        {view.kind === "template" ? (
+        {view.kind === "starter" ? (
           <Notice>
-            A template to copy when writing a model. Do not use it for real
+            A starter to copy when writing a model. Do not use it for real
             forecasts.
           </Notice>
         ) : null}
 
-        {/* The authors' own verdict, visibly apart from the review gate. */}
-        <h2 className={H2}>Status</h2>
-        <div className="d2-card mb-8 p-5">
-          <AssessedStatusBadge status={view.assessedStatus} />
-          <p className="mt-3 text-[15px] leading-[1.55] text-ink-2">
-            {view.assessedBlurb}
-          </p>
-          <p className="mt-2 text-[14px] text-ink-3">
-            Rated by the authors, not by the marketplace.
-          </p>
-        </div>
+        {view.kind === "model" ? (
+          <>
+            <h2 className={H2}>Developed for</h2>
+            <div className="d2-card mb-8 p-5">
+              {view.developedFor ? (
+                <p className="text-[15px] leading-[1.55] text-ink-2">
+                  {view.developedFor}
+                </p>
+              ) : (
+                <p className="text-[15px] leading-[1.55] text-ink-3">
+                  Not stated by the authors yet.
+                </p>
+              )}
+              <p className="mt-2 text-[14px] text-ink-3">
+                Using it for another disease or country may need extra
+                preparation and tuning.
+              </p>
+            </div>
+          </>
+        ) : null}
 
         <h2 className={H2}>Covariates</h2>
         <dl className="mb-8 grid gap-4 sm:grid-cols-2">
           {(
             [
-              ["Required (supplied by Chap)", view.requiredCovariates.length ? view.requiredCovariates : ["none"]],
-              ["Optional", optional],
+              ["Required (supplied by Chap)", "required_covariates", view.requiredCovariates.length ? view.requiredCovariates : ["none"]],
+              ["Optional", "additional_continuous_covariates", optional],
             ] as const
-          ).map(([label, names]) => (
+          ).map(([label, field, names]) => (
             <div key={label} className="d2-card p-5">
-              <dt className="mb-2 text-[14px] font-medium text-ink-2">{label}</dt>
+              <dt className="mb-2 text-[14px] font-medium text-ink-2">
+                {label}
+                <Field name={field} />
+              </dt>
               {names.map((n) => (
                 <dd key={n} className="font-mono text-[15px] text-ink">
                   {n}
@@ -110,19 +129,22 @@ function OverviewTab({
         <dl>
           {(
             [
-              ["Period", view.periodType],
-              ["Horizon", view.horizon],
-              ["Needs geometry", view.requiresGeo ? "yes" : "no"],
-              ["Built with", view.framework],
-              ["chapkit", view.chapkitRequirement],
-              ["Service id", view.serviceId],
+              ["Period type", "period_type", view.periodType],
+              ["Prediction periods", "min/max_prediction_periods", view.horizon],
+              ["Needs geometry", "requires_geo", view.requiresGeo ? "yes" : "no"],
+              ["Built with", null, view.framework],
+              ["chapkit version", null, view.chapkitRequirement],
+              ["Service id", "id", view.serviceId],
             ] as const
-          ).map(([k, v]) => (
+          ).map(([k, field, v]) => (
             <div
               key={k}
               className="flex justify-between gap-4 border-b border-line py-2.5 text-[15px]"
             >
-              <dt className="shrink-0 text-ink-2">{k}</dt>
+              <dt className="shrink-0 text-ink-2">
+                {k}
+                {field ? <Field name={field} /> : null}
+              </dt>
               <dd className="min-w-0 text-right font-mono text-[14px] text-ink [overflow-wrap:anywhere]">
                 {v}
               </dd>
@@ -142,7 +164,7 @@ function OverviewTab({
 }
 
 function VersionsTab({ view }: { view: ModelDetailView }) {
-  const installable = view.kind !== "template";
+  const installable = view.kind !== "starter";
   const installCmd = (v: ModelDetailView["versions"][number]) =>
     v.isStable
       ? `chap-admin install ${view.id}`
@@ -192,11 +214,10 @@ function VersionsTab({ view }: { view: ModelDetailView }) {
           <thead className="border-b border-line bg-surface-2 text-[14px] text-ink">
             <tr>
               <th scope="col" className="px-5 py-3 font-medium">Version</th>
-              <th scope="col" className="px-5 py-3 font-medium">Status</th>
               <th scope="col" className="px-5 py-3 font-medium">Image</th>
               <th scope="col" className="px-5 py-3 font-medium">Changes</th>
               {installable ? (
-                <th scope="col" className="px-5 py-3 font-medium">Install</th>
+                <th scope="col" className="px-5 py-3 font-medium">Install command</th>
               ) : null}
             </tr>
           </thead>
@@ -210,17 +231,12 @@ function VersionsTab({ view }: { view: ModelDetailView }) {
                     {v.isLatest && !v.isStable ? (
                       <ChannelChip channel="latest" />
                     ) : null}
+                    <StatusBadge status={v.status} />
                   </span>
                 </td>
                 <td className="px-5 py-4">
-                  <StatusBadge status={v.status} />
-                </td>
-                <td className="px-5 py-4">
-                  <span className="flex items-center gap-2">
-                    <span className="font-mono text-[14px] text-ink">
-                      :{v.imageTag}
-                    </span>
-                    <CopyButton text={v.image} />
+                  <span className="font-mono text-[14px] text-ink">
+                    :{v.imageTag}
                   </span>
                 </td>
                 <td className="max-w-[48ch] px-5 py-4 text-ink-2">
@@ -228,7 +244,7 @@ function VersionsTab({ view }: { view: ModelDetailView }) {
                 </td>
                 {installable ? (
                   <td className="px-5 py-4">
-                    <CopyButton text={installCmd(v)} />
+                    <CopyButton text={installCmd(v)} label="Copy command" />
                   </td>
                 ) : null}
               </tr>
@@ -356,9 +372,9 @@ function InstallTab({ view }: { view: ModelDetailView }) {
   return (
     <div className="max-w-[820px]">
       <h2 className={H2}>Install</h2>
-      {view.kind === "template" ? (
+      {view.kind === "starter" ? (
         <Notice>
-          A template is not installed into Chap. Copy its repository to start
+          A starter is not installed into Chap. Copy its repository to start
           a model of your own.
         </Notice>
       ) : (

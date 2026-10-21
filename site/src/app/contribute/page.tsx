@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { IconCheckmarkCircle24 } from "@dhis2/ui-icons";
 import { GitHubMark } from "@/components/icons";
 import { CodePanel } from "@/components/CodePanel";
@@ -8,7 +9,7 @@ import { getRegistry } from "@/lib/registry";
 export const metadata: Metadata = {
   title: "Contribute",
   description:
-    "How to list a model: one YAML file, one pull request, three maintainer reviews.",
+    "How to list a model: one YAML file, one pull request and verification.",
 };
 
 /** Compact version of the real schema documented in models/README.md. */
@@ -17,11 +18,14 @@ const EXAMPLE_YAML = `schema_version: 2
 id: my_model
 service_id: my-model          # MLServiceInfo.id — kebab-case of id
 display_name: My Model
-kind: model                   # model | template
+kind: model                   # model | starter
 assessed_status: red          # YOUR OWN chapkit AssessedStatus
 
 summary: >-
   What the model is and when to use it.
+
+developed_for: >-             # the disease and setting you tested it on
+  Monthly dengue cases in Country X at district level.
 
 source:
   repository: https://github.com/org/my_model
@@ -31,6 +35,7 @@ source:
 attribution:
   author: Your Name
   organization: Your Institute
+  original_source: https://...  # upstream model, if you adapted one
 
 compatibility:
   period_types: [monthly]
@@ -53,7 +58,7 @@ versions:
     image_tag: sha-1111111    # the tag built from that commit
     chapkit: ">=2.0.0,<3"
     status: verified          # set by maintainers on approval
-    verified_by: []           # the three approving maintainers
+    verified_by: []           # the reviewers
     changelog: First submission.
 
 configurations:
@@ -66,7 +71,7 @@ configurations:
 `;
 
 const CHECKS = [
-  "It is a chapkit 2 service.",
+  "It is a chapkit service.",
   "The image is published with a sha-<short commit> tag.",
   "The pin is the full 40-character commit and the image tag built from it.",
   "It registers with chap-core and runs a train and a predict.",
@@ -77,7 +82,7 @@ const CHECKS = [
 const STEPS = [
   ["Add one YAML file", "Describe your model in models/<id>.yaml."],
   ["Open a pull request", "No account or form — just GitHub."],
-  ["Get three approvals", "Once merged, your model is listed under your name."],
+  ["Get verified", "Once merged, your model is listed under your name."],
 ];
 
 export default function ContributePage() {
@@ -89,8 +94,11 @@ export default function ContributePage() {
         Submit a model
       </h1>
       <p className="mt-3 max-w-[52ch] text-[17px] leading-[1.6] text-ink-2">
-        One file, one pull request, three reviews. Your name is shown on the
-        listing.
+        One file, one pull request and verification. Your name is shown on the
+        listing.{" "}
+        <Link href="/verification" className="font-medium text-brand hover:underline">
+          Read what verification covers.
+        </Link>
       </p>
 
       <ol className="mt-10 grid gap-4 md:grid-cols-3">

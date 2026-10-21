@@ -11,19 +11,6 @@ export function Dhis2Mark(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-/** Scalloped verification seal with a knockout check. */
-export function SealIcon({
-  knockout = "var(--mp-surface)",
-  ...props
-}: SVGProps<SVGSVGElement> & { knockout?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden {...props}>
-      <path d="M8 .8 9.9 2 12.1 1.9l.8 2.1 1.9 1.2-.6 2.1.6 2.1-1.9 1.2-.8 2.1-2.2-.1L8 15.2 6.1 14l-2.2.1-.8-2.1L1.2 10.8l.6-2.1-.6-2.1L3.1 5.4l.8-2.1L6.1 2 8 .8Z" />
-      <path d="M6.9 10.6 4.6 8.3l.9-.9 1.4 1.4 3.5-3.5.9.9-4.4 4.4Z" fill={knockout} />
-    </svg>
-  );
-}
-
 export function GitHubMark(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden {...props}>

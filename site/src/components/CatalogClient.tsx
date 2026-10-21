@@ -5,11 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { IconSearch24 } from "@dhis2/ui-icons";
 import type { InReviewPinView, ModelCardView } from "@/lib/views";
-import {
-  ASSESSED_STATUS_COPY,
-  ASSESSED_STATUS_ORDER,
-} from "@/lib/presentation";
-import { AssessedStatusBadge, KindBadge } from "./badges";
+import { KindBadge } from "./badges";
 import { AuthorLine } from "./author";
 
 
@@ -20,11 +16,7 @@ function matches(m: ModelCardView, q: string): boolean {
   return hay.includes(q.toLowerCase());
 }
 
-/**
- * One listing: what it is, who made it, and the authors' own status. The
- * status badge is the authors' claim; the review gate is stated once above
- * the grid, since every listed pin carries it.
- */
+/** A listing with its description, requirements and author. */
 function ModelCard({ m }: { m: ModelCardView }) {
   return (
     <Link
@@ -35,7 +27,6 @@ function ModelCard({ m }: { m: ModelCardView }) {
         <h3 className="font-brand text-[20px] font-medium leading-tight text-ink">
           {m.name}
         </h3>
-        <AssessedStatusBadge status={m.assessedStatus} />
       </div>
       <p className="line-clamp-3 text-[15px] leading-[1.55] text-ink-2">
         {m.summary}
@@ -127,16 +118,27 @@ export function CatalogClient({
 
   const hits = models.filter((m) => matches(m, q));
   const forecasting = hits.filter((m) => m.kind === "model");
-  const templates = hits.filter((m) => m.kind === "template");
+  const starters = hits.filter((m) => m.kind === "starter");
 
   return (
     <main className="mx-auto max-w-[1240px] px-5 pb-20 pt-12 sm:px-8 sm:pt-16">
       <h1 className="font-brand text-[clamp(32px,4vw,46px)] font-medium leading-[1.1] text-ink">
         Forecasting models for Chap
       </h1>
-      <p className="mt-3 max-w-[52ch] text-[17px] leading-[1.6] text-ink-2">
-        Every model here is approved by three Chap maintainers before it is
-        listed.
+      <p className="mt-5 max-w-[46ch] text-[clamp(20px,2.2vw,24px)] leading-[1.45] text-ink">
+        Early warning and forecasting models you can install into your Chap
+        instance with a single command.
+      </p>
+      <p className="mt-4 max-w-[64ch] text-[17px] leading-[1.6] text-ink-2">
+        Anyone can contribute a model: just{" "}
+        <Link href="/contribute" className="font-medium text-brand hover:underline">
+          open a pull request
+        </Link>
+        . Every version listed here is{" "}
+        <Link href="/verification" className="font-medium text-brand hover:underline">
+          verified
+        </Link>{" "}
+        to run in Chap.
       </p>
 
       <div className="relative mt-8 max-w-[560px]">
@@ -170,35 +172,15 @@ export function CatalogClient({
         <p className="mt-6 text-[15px] text-ink-2">No models match.</p>
       )}
 
-      <details className="mt-8 max-w-[760px] text-[15px] text-ink-2">
-        <summary className="cursor-pointer font-medium text-brand">
-          What does the coloured status mean?
-        </summary>
-        <p className="mt-3">
-          It is the authors&apos; own rating of their model — not a
-          marketplace grade.
-        </p>
-        <dl className="mt-3 space-y-2">
-          {ASSESSED_STATUS_ORDER.map((status) => (
-            <div key={status} className="flex flex-wrap items-center gap-3">
-              <dt>
-                <AssessedStatusBadge status={status} />
-              </dt>
-              <dd>{ASSESSED_STATUS_COPY[status].blurb}</dd>
-            </div>
-          ))}
-        </dl>
-      </details>
-
-      {templates.length > 0 ? (
+      {starters.length > 0 ? (
         <section className="mt-14">
           <h2 className="font-brand text-[20px] font-medium text-ink">
-            Templates
+            Starters
           </h2>
           <p className="mt-1 text-[15px] text-ink-2">
             Starting points for writing a model — not for making forecasts.
           </p>
-          <CardGrid models={templates} />
+          <CardGrid models={starters} />
         </section>
       ) : null}
 
