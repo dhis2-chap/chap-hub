@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  AssessedStatusBadge,
   KindBadge,
   VerifiedChip,
 } from "@/components/badges";
@@ -55,12 +54,9 @@ export default async function ModelPage({
           <h1 className="font-brand text-[clamp(30px,5vw,44px)] font-medium leading-[1.05] text-ink">
             {view.name}
           </h1>
-          {/* The authors' own status first; the review gate beside it, never
-              merged into it. */}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <KindBadge kind={view.kind} />
-            <AssessedStatusBadge status={view.assessedStatus} />
-            <VerifiedChip approvals="3/3" />
+            <VerifiedChip />
           </div>
           <p className="mt-5 max-w-[64ch] text-[17px] leading-[1.65] text-ink-2">
             {view.summary}

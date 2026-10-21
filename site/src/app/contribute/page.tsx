@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { IconCheckmarkCircle24 } from "@dhis2/ui-icons";
 import { GitHubMark } from "@/components/icons";
 import { CodePanel } from "@/components/CodePanel";
@@ -8,7 +9,7 @@ import { getRegistry } from "@/lib/registry";
 export const metadata: Metadata = {
   title: "Contribute",
   description:
-    "How to list a model: one YAML file, one pull request, three maintainer reviews.",
+    "How to list a model: one YAML file, one pull request and verification.",
 };
 
 /** Compact version of the real schema documented in models/README.md. */
@@ -53,7 +54,7 @@ versions:
     image_tag: sha-1111111    # the tag built from that commit
     chapkit: ">=2.0.0,<3"
     status: verified          # set by maintainers on approval
-    verified_by: []           # the three approving maintainers
+    verified_by: []           # the reviewers
     changelog: First submission.
 
 configurations:
@@ -77,7 +78,7 @@ const CHECKS = [
 const STEPS = [
   ["Add one YAML file", "Describe your model in models/<id>.yaml."],
   ["Open a pull request", "No account or form — just GitHub."],
-  ["Get three approvals", "Once merged, your model is listed under your name."],
+  ["Get verified", "Once merged, your model is listed under your name."],
 ];
 
 export default function ContributePage() {
@@ -89,8 +90,11 @@ export default function ContributePage() {
         Submit a model
       </h1>
       <p className="mt-3 max-w-[52ch] text-[17px] leading-[1.6] text-ink-2">
-        One file, one pull request, three reviews. Your name is shown on the
-        listing.
+        One file, one pull request and verification. Your name is shown on the
+        listing.{" "}
+        <Link href="/verification" className="font-medium text-brand hover:underline">
+          Read what verification covers.
+        </Link>
       </p>
 
       <ol className="mt-10 grid gap-4 md:grid-cols-3">

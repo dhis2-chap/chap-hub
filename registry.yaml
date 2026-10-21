@@ -1,4 +1,4 @@
-# Chap Model Marketplace — registry index
+# Chap Hub — registry index
 #
 # This file is the entry point for the marketplace site. Every model listed
 # here has been reviewed and verified by the Chap maintainers; a model (or a
@@ -11,16 +11,16 @@
 # Verification is about the pin, not the forecast: the gate checks that a
 # pinned revision is what it claims to be and runs as a chapkit service. What
 # the model's own authors will vouch for is a separate axis, carried per
-# model as `assessed_status` and surfaced as such by the site.
+# model as `assessed_status`, with its explanation on the model detail page.
 
 schema_version: 2
 
 marketplace:
-  name: Chap Model Marketplace
+  name: Chap Hub
   description: >-
-    Curated, verified forecasting models for Chap, the Climate & Health
-    Analytics Platform. Every listed model and every version pin is reviewed
-    by the Chap maintainers before it appears here.
+    Discover forecasting models for Chap, the Climate & Health Analytics
+    Platform. Browse models, check their requirements and follow the
+    installation instructions.
   # The marketplace's own repository. The site build ingests this repo's open
   # pull requests so an in-review model or version pin can appear on the site
   # with its running approval count before it merges.

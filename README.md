@@ -1,19 +1,18 @@
-# Chap Model Marketplace
+# Chap Hub
 
 A curated, verified catalog of forecasting models for [Chap](https://chap.dhis2.org),
 the Climate & Health Analytics Platform. **This repository is the marketplace**:
 the YAML files at the root are the source of truth, and the website is a
 rendering of them.
 
-Nothing is listed without a pull request approved by three Chap maintainers —
-the merge to `main` is the verification. The same gate applies to every new
-version pin, so a `stable` channel pointer is always a reviewed commit.
+Listed model versions are marked **Verified** after a compatibility review.
+Verification checks the pinned revision and published image, chapkit service
+registration, and training and prediction. **Verified does not assess or
+guarantee model performance.** See [Model verification](https://chap-marketplace.dhis2.org/verification)
+for the checks and their limitations.
 
-That verification is about the **pin**, not the forecast: it says a revision
-is what it claims to be and runs as a chapkit service. What each model's own
-authors will vouch for is a separate axis, carried per model as
-`assessed_status` (chapkit's `AssessedStatus`) and surfaced separately by the
-site. No listed model is currently self-assessed `green`.
+The authors' own `assessed_status` remains in the registry. The site shows
+its explanation on the model detail page, without model-state badges.
 
 ## Layout
 
@@ -144,9 +143,9 @@ Vercel's SSO. So the tab is the history of what is actually live.
   shows no scores at all — not an illustrative sparkline, not a placeholder
   number. The benchmarks page and each model's Benchmarks tab render only
   from files in `benchmarks/`.
-- `assessed_status` is transcribed from each service's own chapkit metadata
-  and shown as the authors' claim, never as a marketplace grade. The two
-  signals are never merged into one badge.
+- `assessed_status` is transcribed from each service's own chapkit metadata.
+  Its explanation is shown as the authors' claim on the model detail page,
+  separately from verification; model-state badges are not shown.
 - In-review pins come from real open PRs at build time and are labeled with
   the build timestamp; the site never invents proposals.
 - Presentation-only metadata the schema doesn't carry yet (framework labels,

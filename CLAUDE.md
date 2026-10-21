@@ -1,4 +1,4 @@
-# Chap Model Marketplace
+# Chap Hub
 
 Curated catalog of chapkit-based epidemiological forecasting models for
 [Chap](https://chap.dhis2.org/) (Climate & Health Analytics Platform, DHIS2).
@@ -38,7 +38,9 @@ site in `site/` is a build-time rendering of it. No auth, no server state.
   *pin* (it is the revision it claims to be and runs as a chapkit service).
   `assessed_status` is the *authors'* own chapkit `AssessedStatus`, copied
   verbatim — the marketplace never assigns, upgrades or reinterprets it. Keep
-  them visually and verbally distinct everywhere. No listed model is
+  them verbally distinct. Show the authors' assessment as explanatory text
+  on model detail pages, without model-state badges. Label verification
+  simply "Verified" and link to `/verification`. No listed model is
   self-assessed `green`; three of the four forecasting models are `red`
   or `gray`.
 - **Templates are not models.** `kind: template` marks scaffolding (the two

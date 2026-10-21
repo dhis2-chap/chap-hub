@@ -5,7 +5,7 @@ import { useState, type KeyboardEvent, type ReactNode } from "react";
 import { IconWarningFilled24 } from "@dhis2/ui-icons";
 import { BENCHMARKS_LIVE } from "@/lib/flags";
 import type { ModelDetailView } from "@/lib/views";
-import { AssessedStatusBadge, ChannelChip, StatusBadge } from "./badges";
+import { ChannelChip, StatusBadge } from "./badges";
 import { CodePanel } from "./CodePanel";
 import { CopyButton } from "./copy";
 import { ComparisonChart, CrpsByHorizonChart } from "./charts";
@@ -62,11 +62,9 @@ function OverviewTab({
           </Notice>
         ) : null}
 
-        {/* The authors' own verdict, visibly apart from the review gate. */}
-        <h2 className={H2}>Status</h2>
+        <h2 className={H2}>Author assessment</h2>
         <div className="d2-card mb-8 p-5">
-          <AssessedStatusBadge status={view.assessedStatus} />
-          <p className="mt-3 text-[15px] leading-[1.55] text-ink-2">
+          <p className="text-[15px] leading-[1.55] text-ink-2">
             {view.assessedBlurb}
           </p>
           <p className="mt-2 text-[14px] text-ink-3">

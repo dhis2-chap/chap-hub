@@ -5,11 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { IconSearch24 } from "@dhis2/ui-icons";
 import type { InReviewPinView, ModelCardView } from "@/lib/views";
-import {
-  ASSESSED_STATUS_COPY,
-  ASSESSED_STATUS_ORDER,
-} from "@/lib/presentation";
-import { AssessedStatusBadge, KindBadge } from "./badges";
+import { KindBadge } from "./badges";
 import { AuthorLine } from "./author";
 
 
@@ -20,11 +16,7 @@ function matches(m: ModelCardView, q: string): boolean {
   return hay.includes(q.toLowerCase());
 }
 
-/**
- * One listing: what it is, who made it, and the authors' own status. The
- * status badge is the authors' claim; the review gate is stated once above
- * the grid, since every listed pin carries it.
- */
+/** A listing with its description, requirements and author. */
 function ModelCard({ m }: { m: ModelCardView }) {
   return (
     <Link
@@ -35,7 +27,6 @@ function ModelCard({ m }: { m: ModelCardView }) {
         <h3 className="font-brand text-[20px] font-medium leading-tight text-ink">
           {m.name}
         </h3>
-        <AssessedStatusBadge status={m.assessedStatus} />
       </div>
       <p className="line-clamp-3 text-[15px] leading-[1.55] text-ink-2">
         {m.summary}
@@ -135,8 +126,18 @@ export function CatalogClient({
         Forecasting models for Chap
       </h1>
       <p className="mt-3 max-w-[52ch] text-[17px] leading-[1.6] text-ink-2">
-        Every model here is approved by three Chap maintainers before it is
-        listed.
+        Chap Hub is a catalog of forecasting models for Chap, the Climate &amp;
+        Health Analytics Platform. Browse or search for a model, check its
+        requirements and configurations, then follow its Install tab to use it
+        in your Chap deployment.
+      </p>
+
+      <p className="mt-3 text-[15px] text-ink-2">
+        Verified versions have passed compatibility checks. Verification does
+        not assess or guarantee model performance.{" "}
+        <Link href="/verification" className="font-medium text-brand hover:underline">
+          What does Verified mean?
+        </Link>
       </p>
 
       <div className="relative mt-8 max-w-[560px]">
@@ -169,26 +170,6 @@ export function CatalogClient({
       ) : (
         <p className="mt-6 text-[15px] text-ink-2">No models match.</p>
       )}
-
-      <details className="mt-8 max-w-[760px] text-[15px] text-ink-2">
-        <summary className="cursor-pointer font-medium text-brand">
-          What does the coloured status mean?
-        </summary>
-        <p className="mt-3">
-          It is the authors&apos; own rating of their model — not a
-          marketplace grade.
-        </p>
-        <dl className="mt-3 space-y-2">
-          {ASSESSED_STATUS_ORDER.map((status) => (
-            <div key={status} className="flex flex-wrap items-center gap-3">
-              <dt>
-                <AssessedStatusBadge status={status} />
-              </dt>
-              <dd>{ASSESSED_STATUS_COPY[status].blurb}</dd>
-            </div>
-          ))}
-        </dl>
-      </details>
 
       {templates.length > 0 ? (
         <section className="mt-14">

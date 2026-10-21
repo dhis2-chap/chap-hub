@@ -115,15 +115,6 @@ export const ASSESSED_STATUS_COPY: Record<
   },
 };
 
-/** Best-to-worst, for sorting and for rendering the scale in order. */
-export const ASSESSED_STATUS_ORDER: AssessedStatus[] = [
-  "green",
-  "yellow",
-  "orange",
-  "red",
-  "gray",
-];
-
 /** Display names for the dataset ids used in benchmarks/. */
 export const DATASET_NAME: Record<string, string> = {
   "laos-admin1-monthly": "Laos admin-1 monthly",
