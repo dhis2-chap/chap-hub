@@ -51,10 +51,19 @@ covariates:
   allow_free_additional: true
 
 channels:
-  stable: 0.1.7
-  latest: 0.1.7
+  stable: 0.1.8
+  latest: 0.1.8
 
 versions:
+  - version: 0.1.8
+    commit: 84fbe77734f51a592a215f34b2b8731c3acbed2f
+    image_tag: sha-84fbe77
+    chapkit: ">=2.4.0,<3"
+    status: verified
+    # Pinned by the maintainers without the three-approval round (security fix).
+    verified_by: []
+    changelog: >-
+      Upgrades certifi to 2026.10.19, which drops trust in the compromised eMudhra intermediate CAs, and builds on the chapkit-r-inla base with uv 0.13.4. The image now installs its R packages from renv.lock (GHRmodel at the same commit as 0.1.7). No change to the model.
   - version: 0.1.7
     commit: 1748a6462eda57b9d68f7e0344ade727b975b481
     image_tag: sha-1748a64

@@ -44,10 +44,19 @@ covariates:
   allow_free_additional: false
 
 channels:
-  stable: 1.0.2
-  latest: 1.0.2
+  stable: 1.0.3
+  latest: 1.0.3
 
 versions:
+  - version: 1.0.3
+    commit: cfa45633e2966ae2336297ec41b400c4db5c13fe
+    image_tag: sha-cfa4563
+    chapkit: ">=2.2.0,<3"
+    status: verified
+    # Pinned by the maintainers without the three-approval round (security fix).
+    verified_by: []
+    changelog: >-
+      Upgrades certifi to 2026.10.19, which drops trust in the compromised eMudhra intermediate CAs, and builds on the chapkit-py base with uv 0.13.4. No change to the model.
   - version: 1.0.2
     commit: 3824ad74ea5869513b7cbaabd5100317c2b757b7
     image_tag: sha-3824ad7
