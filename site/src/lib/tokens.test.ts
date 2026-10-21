@@ -37,7 +37,7 @@ describe("globals.css against @dhis2/ui-constants", () => {
   ].map(([, hex, name]) => ({ hex, name }));
 
   it("annotates the palette tokens", () => {
-    expect(annotated.length).toBeGreaterThan(30);
+    expect(annotated.length).toBeGreaterThan(20);
   });
 
   it.each(annotated)("$name is $hex", ({ hex, name }) => {

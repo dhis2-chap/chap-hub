@@ -20,11 +20,11 @@ const robotoMono = Roboto_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Chap Model Marketplace",
-    template: "%s · Chap Model Marketplace",
+    default: "Chap Hub",
+    template: "%s · Chap Hub",
   },
   description:
-    "Curated, verified forecasting models for Chap, the Climate & Health Analytics Platform. Every listed model and every version pin is reviewed by three Chap maintainers.",
+    "Discover forecasting models for Chap, the Climate & Health Analytics Platform. Browse models, check their requirements and follow the installation instructions.",
 };
 
 export default function RootLayout({

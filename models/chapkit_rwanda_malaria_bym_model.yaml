@@ -17,6 +17,9 @@ summary: >-
   Built for one country's data — it needs geometry and the full climate
   covariate set.
 
+developed_for: >-
+  Monthly malaria cases in Rwanda at sector (ADM3) level.
+
 source:
   repository: https://github.com/chap-models/chapkit_rwanda_malaria_bym_model
   image: ghcr.io/chap-models/chapkit_rwanda_malaria_bym_model
@@ -30,6 +33,7 @@ attribution:
   citation: >-
     Climate Health Analytics Platform. 2025. "Kigali Malaria BYM Model". HISP
     Rwanda.
+  original_source: https://github.com/knutdrand/Kigali-Malaria-modelling-23-27-Feb
 
 compatibility:
   period_types: [monthly]

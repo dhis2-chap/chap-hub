@@ -16,6 +16,11 @@ summary: >-
   running one user-specified configuration with selectable spatial, seasonal
   and interannual random effects and lagged or rolling climate covariates.
 
+developed_for: >-
+  Dengue. The Chap version was checked against BSC's reference pipeline on
+  Laos dengue data, and ships with dengue data from 11 Brazilian
+  microregions as its example.
+
 source:
   repository: https://github.com/chap-models/chapkit_ghr_model
   image: ghcr.io/chap-models/chapkit_ghr_model
@@ -30,6 +35,7 @@ attribution:
     hydrometeorological hazards and urbanisation on dengue risk in Brazil: a
     spatiotemporal modelling study. The Lancet Planetary Health.
     https://doi.org/10.1016/S2542-5196(20)30292-8
+  original_source: https://gitlab.earth.bsc.es/ghr/ghrmodel
 
 compatibility:
   period_types: [monthly]

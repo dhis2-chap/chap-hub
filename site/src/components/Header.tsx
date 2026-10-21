@@ -210,7 +210,7 @@ export function Header({ benchmarksLive }: { benchmarksLive: boolean }) {
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
             <Dhis2Mark className="h-7 w-auto text-white" />
             <span className="text-[17px] font-medium leading-none">
-              Chap Model Marketplace
+              Chap Hub
             </span>
           </Link>
           <nav className="hidden h-full items-stretch bar:flex">
