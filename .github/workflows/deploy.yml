@@ -6,11 +6,16 @@ name: deploy
 # The build is the same `next build` CI runs, so invalid registry YAML fails
 # here too. CI is a separate workflow, though: a push whose tests fail still
 # deploys, and the approval rule on main is what keeps that from happening.
+#
+# workflow_dispatch is the manual fallback for when GitHub drops a push event
+# and a merge never deploys (`gh workflow run deploy`), without needing a
+# dummy commit through a PR.
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -24,6 +29,8 @@ jobs:
   deploy:
     name: deploy to vercel
     runs-on: ubuntu-latest
+    # A manual run can be started on any branch; only main is production.
+    if: github.ref == 'refs/heads/main'
     # Naming an environment is what puts each run in the Deployments view;
     # `url` is that record's "View deployment" link. It resolves after the job,
     # so it can read a step output.
