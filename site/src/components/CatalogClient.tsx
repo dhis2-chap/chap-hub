@@ -126,8 +126,8 @@ export function CatalogClient({
         Forecasting models for Chap
       </h1>
       <p className="mt-5 max-w-[46ch] text-[clamp(20px,2.2vw,24px)] leading-[1.45] text-ink">
-        Find forecasting and early warning models, and run them in your own
-        Chap.
+        Early warning and forecasting models you can install into your Chap
+        instance with a single command.
       </p>
       <p className="mt-4 max-w-[64ch] text-[17px] leading-[1.6] text-ink-2">
         Anyone can contribute a model: just{" "}
