@@ -11,8 +11,8 @@ registration, and training and prediction. **Verified does not assess or
 guarantee model performance.** See [Model verification](https://chap-marketplace.dhis2.org/verification)
 for the checks and their limitations.
 
-The authors' own `assessed_status` remains in the registry. The site shows
-its explanation on the model detail page, without model-state badges.
+The authors' own `assessed_status` remains in the registry as data; the site
+does not show it.
 
 ## Layout
 
@@ -34,7 +34,7 @@ the two, so they cannot drift; `:latest` moves and is never a pin.
 
 Channels (`stable` / `latest`) are named pointers into the version list;
 `channels.stable` must point at a version with `status: verified`. Files also
-declare `kind` — a forecasting `model`, or a `template` for authors to copy —
+declare `kind` — a forecasting `model`, or a `starter` for authors to copy —
 and the format is documented with an annotated example in
 [models/README.md](models/README.md).
 
@@ -47,9 +47,9 @@ and the format is documented with an annotated example in
 | [Auto-ARIMA](models/auto_arima_chapkit.yaml) | red | R · fable | 0–12 |
 | [GHRmodel](models/chapkit_ghr_model.yaml) | red | R · INLA | 1–12 |
 
-Templates — scaffolding, not forecasting models:
+Starters — scaffolding, not forecasting models:
 
-| Template | `assessed_status` | Framework |
+| Starter | `assessed_status` | Framework |
 |---|---|---|
 | [Minimalist Example (Python)](models/chapkit_minimalist_example_py.yaml) | red | Python · scikit-learn |
 | [Minimalist Example (R)](models/chapkit_minimalist_example_r.yaml) | red | R · `lm()` |
@@ -144,8 +144,7 @@ Vercel's SSO. So the tab is the history of what is actually live.
   number. The benchmarks page and each model's Benchmarks tab render only
   from files in `benchmarks/`.
 - `assessed_status` is transcribed from each service's own chapkit metadata.
-  Its explanation is shown as the authors' claim on the model detail page,
-  separately from verification; model-state badges are not shown.
+  It is kept in the registry but not shown on the site.
 - In-review pins come from real open PRs at build time and are labeled with
   the build timestamp; the site never invents proposals.
 - Presentation-only metadata the schema doesn't carry yet (framework labels,
@@ -164,7 +163,3 @@ methodology will be documented in the [benchmark record
 documentation](benchmarks/README.md) once it is settled and the first suite
 has run. For the underlying evaluation command, see the Chap guide to
 [evaluating models](https://chap.dhis2.org/chap-modeling-platform/external_models/running_models_in_chap/).
-
-Until a suite has run, the only quality signal on the site is each model's
-author-assessed status — which is why it is labelled as the authors' own
-claim everywhere it appears.

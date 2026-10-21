@@ -26,8 +26,8 @@ site in `site/` is a build-time rendering of it. No auth, no server state.
 
 ## Decisions and invariants
 
-- **Chapkit-only.** Only chapkit 2 ML services are listed (any 2.x minor). The install
-  path is `chap-admin install <id>` (chap-core) against a running chap: it starts
+- **Chapkit-only.** Only chapkit ML services are listed; no chapkit major
+  version is hard-coded. The install path is `chap-admin install <id>` (chap-core) against a running chap: it starts
   the stable pin, waits for self-registration and adds the entry's
   configurations. Not hand-written compose overlays, and not
   `chapkit mlproject run` — that was the schema_version 1 world.
@@ -37,15 +37,18 @@ site in `site/` is a build-time rendering of it. No auth, no server state.
 - **Two independent signals, never merged.** The review gate verifies the
   *pin* (it is the revision it claims to be and runs as a chapkit service).
   `assessed_status` is the *authors'* own chapkit `AssessedStatus`, copied
-  verbatim — the marketplace never assigns, upgrades or reinterprets it. Keep
-  them verbally distinct. Show the authors' assessment as explanatory text
-  on model detail pages, without model-state badges. Label verification
-  simply "Verified" and link to `/verification`. No listed model is
+  verbatim — the marketplace never assigns, upgrades or reinterprets it. It
+  stays in the registry as data but is not shown on the site. Every listed version
+  is verified, so no "Verified" badges: the home intro says so once, with
+  "verified" linking to `/verification`; version tables tag only the
+  non-verified exceptions (unstable, deprecated, yanked). No listed model is
   self-assessed `green`; three of the four forecasting models are `red`
   or `gray`.
-- **Templates are not models.** `kind: template` marks scaffolding (the two
+- **Starters are not models.** `kind: starter` marks scaffolding (the two
   minimalist examples). Counted, filtered and labelled separately; never
-  presented as something to forecast with.
+  presented as something to forecast with. Not called "template": in chap-core
+  every installed model is a model template (`ModelTemplateDB`), configured
+  into configured models.
 - **Benchmarks are not run yet, and the methodology is undecided.** How the
   suites will be run (harness, datasets, backtest parameters, ranking) is an
   open question. Never document a benchmark methodology as decided — docs and

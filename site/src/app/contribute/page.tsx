@@ -18,11 +18,14 @@ const EXAMPLE_YAML = `schema_version: 2
 id: my_model
 service_id: my-model          # MLServiceInfo.id — kebab-case of id
 display_name: My Model
-kind: model                   # model | template
+kind: model                   # model | starter
 assessed_status: red          # YOUR OWN chapkit AssessedStatus
 
 summary: >-
   What the model is and when to use it.
+
+developed_for: >-             # the disease and setting you tested it on
+  Monthly dengue cases in Country X at district level.
 
 source:
   repository: https://github.com/org/my_model
@@ -32,6 +35,7 @@ source:
 attribution:
   author: Your Name
   organization: Your Institute
+  original_source: https://...  # upstream model, if you adapted one
 
 compatibility:
   period_types: [monthly]
@@ -67,7 +71,7 @@ configurations:
 `;
 
 const CHECKS = [
-  "It is a chapkit 2 service.",
+  "It is a chapkit service.",
   "The image is published with a sha-<short commit> tag.",
   "The pin is the full 40-character commit and the image tag built from it.",
   "It registers with chap-core and runs a train and a predict.",

@@ -25,7 +25,7 @@ export default function VerificationPage() {
           </h2>
           <ul className="list-disc space-y-2 pl-6">
             <li>
-              The model is a chapkit 2 service with a published image tied to
+              The model is a chapkit service with a published image tied to
               the listed source-code commit.
             </li>
             <li>
@@ -59,8 +59,7 @@ export default function VerificationPage() {
           <p className="mt-3">
             Verification is a limited compatibility review, not exhaustive
             testing or a security audit. Authors remain responsible for
-            testing and maintaining their models. Any author assessment shown
-            on a model page is the authors&apos; own claim.
+            testing and maintaining their models.
           </p>
         </section>
         <p>

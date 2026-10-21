@@ -60,10 +60,10 @@ describe("the real registry", () => {
     );
   });
 
-  it("counts forecasting models and templates separately", () => {
+  it("counts forecasting models and starters separately", () => {
     const stats = marketplaceStats(registry);
-    expect(stats.models + stats.templates).toBe(registry.models.length);
-    expect(stats.templates).toBeGreaterThan(0);
+    expect(stats.models + stats.starters).toBe(registry.models.length);
+    expect(stats.starters).toBeGreaterThan(0);
   });
 
   it("counts reviews as verified pins × required approvals", () => {

@@ -118,26 +118,27 @@ export function CatalogClient({
 
   const hits = models.filter((m) => matches(m, q));
   const forecasting = hits.filter((m) => m.kind === "model");
-  const templates = hits.filter((m) => m.kind === "template");
+  const starters = hits.filter((m) => m.kind === "starter");
 
   return (
     <main className="mx-auto max-w-[1240px] px-5 pb-20 pt-12 sm:px-8 sm:pt-16">
       <h1 className="font-brand text-[clamp(32px,4vw,46px)] font-medium leading-[1.1] text-ink">
         Forecasting models for Chap
       </h1>
-      <p className="mt-3 max-w-[52ch] text-[17px] leading-[1.6] text-ink-2">
-        Chap Hub is a catalog of forecasting models for Chap, the Climate &amp;
-        Health Analytics Platform. Browse or search for a model, check its
-        requirements and configurations, then follow its Install tab to use it
-        in your Chap deployment.
+      <p className="mt-5 max-w-[46ch] text-[clamp(20px,2.2vw,24px)] leading-[1.45] text-ink">
+        Find forecasting and early warning models, and run them in your own
+        Chap.
       </p>
-
-      <p className="mt-3 text-[15px] text-ink-2">
-        Verified versions have passed compatibility checks. Verification does
-        not assess or guarantee model performance.{" "}
-        <Link href="/verification" className="font-medium text-brand hover:underline">
-          What does Verified mean?
+      <p className="mt-4 max-w-[64ch] text-[17px] leading-[1.6] text-ink-2">
+        Anyone can contribute a model: just{" "}
+        <Link href="/contribute" className="font-medium text-brand hover:underline">
+          open a pull request
         </Link>
+        . Every version listed here is{" "}
+        <Link href="/verification" className="font-medium text-brand hover:underline">
+          verified
+        </Link>{" "}
+        to run in Chap.
       </p>
 
       <div className="relative mt-8 max-w-[560px]">
@@ -171,15 +172,15 @@ export function CatalogClient({
         <p className="mt-6 text-[15px] text-ink-2">No models match.</p>
       )}
 
-      {templates.length > 0 ? (
+      {starters.length > 0 ? (
         <section className="mt-14">
           <h2 className="font-brand text-[20px] font-medium text-ink">
-            Templates
+            Starters
           </h2>
           <p className="mt-1 text-[15px] text-ink-2">
             Starting points for writing a model — not for making forecasts.
           </p>
-          <CardGrid models={templates} />
+          <CardGrid models={starters} />
         </section>
       ) : null}
 

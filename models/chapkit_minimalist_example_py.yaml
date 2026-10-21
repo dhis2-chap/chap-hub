@@ -3,11 +3,11 @@ schema_version: 2
 id: chapkit_minimalist_example_py
 service_id: chapkit-minimalist-example-py
 display_name: Minimalist Example (Python)
-kind: template
+kind: starter
 
 # The author's own chapkit AssessedStatus, copied from the service — not a
 # marketplace verdict. red = highly experimental prototype, not validated.
-# For a template that is the honest reading: it is scaffolding, and its
+# For a starter that is the honest reading: it is scaffolding, and its
 # LinearRegression is a placeholder for a real model.
 assessed_status: red
 
@@ -37,7 +37,7 @@ compatibility:
 covariates:
   # The service declares no required covariates and refuses free-form extras.
   # Its scripts do read rainfall and mean_temperature when the columns are
-  # present — a template under-declaring its inputs is exactly the kind of
+  # present — a starter under-declaring its inputs is exactly the kind of
   # thing to fix when you copy it.
   required: []
   defaults: []
@@ -81,7 +81,7 @@ versions:
 configurations:
   monthly:
     description: >-
-      The only configuration the template exposes. Add your own options to
+      The only configuration the starter exposes. Add your own options to
       the config class in main.py as you replace the model.
     config:
       prediction_periods: 3

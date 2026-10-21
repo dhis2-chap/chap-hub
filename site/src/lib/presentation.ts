@@ -1,4 +1,3 @@
-import type { AssessedStatus } from "./schema";
 
 /**
  * Editorial, site-side metadata the registry YAML does not carry (yet).
@@ -77,43 +76,6 @@ export function presentationFor(id: string): Presentation {
     }
   );
 }
-
-/* ---------- assessed status ---------- */
-
-/**
- * chapkit's AssessedStatus scale, worded for the site. These are the
- * *author's* own definitions, transcribed from chapkit
- * (`src/chapkit/api/service_builder.py`) — the marketplace does not
- * reinterpret them and does not assign them.
- */
-export const ASSESSED_STATUS_COPY: Record<
-  AssessedStatus,
-  { label: string; blurb: string }
-> = {
-  green: {
-    label: "Validated",
-    blurb: "Validated and ready for production use.",
-  },
-  yellow: {
-    label: "Ready for testing",
-    blurb: "Ready for more rigorous testing on diverse data.",
-  },
-  orange: {
-    label: "Promising",
-    blurb:
-      "Shows promise on limited data, needs manual configuration and careful evaluation.",
-  },
-  red: {
-    label: "Prototype",
-    blurb:
-      "Highly experimental prototype, not validated, only for early experimentation.",
-  },
-  gray: {
-    label: "Not intended for use",
-    blurb:
-      "Not intended for use — deprecated, or kept only for backwards compatibility.",
-  },
-};
 
 /** Display names for the dataset ids used in benchmarks/. */
 export const DATASET_NAME: Record<string, string> = {
