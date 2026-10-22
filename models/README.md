@@ -65,6 +65,19 @@ produce real forecasts. They are called starters, not templates, because in Chap
 every installed model is already a *model template* that configurations are
 made from.
 
+## Comparison models
+
+`role: comparison` flags a forecasting model that other models are compared
+against, for example a country's own method or a strong published model.
+When Chap returns metrics for an evaluation it can, on request, include every
+comparison model that was run on the same backtest specification, with a
+comparison value per metric. Leave `role` out for ordinary models.
+
+Baseline models, the simple forecasts any model should beat, are built into
+chap-core and run automatically, so they are not marketplace entries and
+`comparison` is the only role an entry can set. Starters cannot have a role.
+`chap-admin install` passes the role to chap-core with the model template.
+
 ## Annotated example
 
 ```yaml
@@ -77,6 +90,8 @@ display_name: My Model           # human-readable name for the catalog,
                                  # normalised — no "(chapkit)" suffix, no raw
                                  # repo names
 kind: model                      # model | starter
+# role: comparison               # optional; only for models others are
+                                 # compared against (see Comparison models)
 assessed_status: orange          # the AUTHOR's own AssessedStatus:
                                  #   green | yellow | orange | red | gray
 

@@ -117,6 +117,20 @@ describe("schema refinements", () => {
     expect(modelSchema.safeParse(base).success).toBe(true);
   });
 
+  it("accepts a comparison model", () => {
+    expect(modelSchema.safeParse({ ...base, role: "comparison" }).success).toBe(true);
+  });
+
+  it("rejects a role other than comparison", () => {
+    const bad = { ...base, role: "baseline" };
+    expect(modelSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects a starter flagged as a comparison model", () => {
+    const bad = { ...base, kind: "starter", role: "comparison" };
+    expect(modelSchema.safeParse(bad).success).toBe(false);
+  });
+
   it("rejects a service id that is not the kebab-case model id", () => {
     const bad = { ...base, service_id: "something-else" };
     expect(modelSchema.safeParse(bad).success).toBe(false);

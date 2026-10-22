@@ -46,6 +46,14 @@ export const ASSESSED_STATUSES = [
 /** Real forecasting model, or scaffolding to copy when writing one. */
 export const MODEL_KINDS = ["model", "starter"] as const;
 
+/**
+ * A model's role as a reference in Chap evaluations. `comparison` flags a
+ * model that other models are compared against on request, for example a
+ * country's own method. Baseline models are built into chap-core and are
+ * never listed here, so `comparison` is the only role an entry can set.
+ */
+export const MODEL_ROLES = ["comparison"] as const;
+
 const versionSchema = z.object({
   version: z.string().min(1),
   commit: z
@@ -89,6 +97,8 @@ export const modelSchema = z
     service_id: z.string().regex(/^[a-z0-9-]+$/),
     display_name: z.string().min(1),
     kind: z.enum(MODEL_KINDS),
+    /** Absent for ordinary models. */
+    role: z.enum(MODEL_ROLES).optional(),
     /** The author's own AssessedStatus, not a marketplace verdict. */
     assessed_status: z.enum(ASSESSED_STATUSES),
     summary: z.string().min(1),
@@ -135,6 +145,14 @@ export const modelSchema = z
     configurations: z.record(z.string(), configurationSchema).default({}),
   })
   .superRefine((model, ctx) => {
+    if (model.role && model.kind === "starter") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["role"],
+        message: "a starter is not a forecasting model and cannot be a comparison model",
+      });
+    }
+
     // The service id is the model id in kebab-case. Enforced so a listing
     // cannot drift from the identity the service registers with chap-core.
     const expectedServiceId = model.id.replace(/_/g, "-");
