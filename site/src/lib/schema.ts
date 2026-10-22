@@ -301,14 +301,6 @@ export const benchmarkSchema = z.object({
   metrics: z
     .object({ crps: z.number().nonnegative() })
     .catchall(z.number()),
-  /** Machine figures from the run, unnormalised — an order of magnitude. */
-  resources: z
-    .object({
-      wall_seconds: z.number().nonnegative(),
-      cpu_seconds: z.number().nonnegative().optional(),
-      peak_memory_mb: z.number().nonnegative().optional(),
-    })
-    .optional(),
 });
 
 /**

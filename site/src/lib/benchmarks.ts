@@ -7,6 +7,7 @@ import {
   versionByTag,
   type Registry,
 } from "./registry";
+import { inMetricOrder, type MetricColumn } from "./metrics";
 import { datasetNameFor } from "./presentation";
 import {
   benchmarkResultsSchema,
@@ -115,12 +116,12 @@ function formatMetric(value: number, unit: string | null): string {
   return unit ? `${v}${unit === "%" ? "" : " "}${unit}` : v;
 }
 
-/** Every metric of a record, in chap-core's order. */
+/** Every metric of a record, in chap-core's default metric order. */
 export function metricViews(
   bench: Benchmark,
   metrics: MetricInfo[],
 ): MetricView[] {
-  return metrics
+  return inMetricOrder(metrics)
     .filter((m) => bench.metrics[m.id] !== undefined)
     .map((m) => ({
       id: m.id,
@@ -146,15 +147,10 @@ export interface BenchmarkRowView {
   /** "chapkit_ghr_model@dfb2e3f · 0.1.3" */
   pinLine: string;
   measured: boolean;
-  /** Every metric of the run, for the run-record panel; [] when unmeasured. */
+  /** Every metric of the run, formatted, in chap-core's default order; [] when unmeasured. */
   metrics: MetricView[];
-  ncrps: number | null;
-  crps: number | null;
-  mae: number | null;
-  rmse: number | null;
-  wall: number | null;
-  cpu: number | null;
-  mem: number | null;
+  /** The same metrics' raw values, for sorting; {} when unmeasured. */
+  values: Record<string, number>;
   /** Run-record panel subtitle: suite + full-ish commit, or the bare pin. */
   suiteLine: string;
 }
@@ -167,6 +163,8 @@ export interface BenchmarkSuiteView {
   /** "1 of 5 listed models evaluated" */
   countLine: string;
   measured: number;
+  /** Every metric some run of the suite records, in chap-core's default order. */
+  columns: MetricColumn[];
   runContext: { k: string; v: string }[];
   /** Under-table note about pins with no run yet; null when all are measured. */
   pendingNote: string | null;
@@ -222,19 +220,14 @@ export function buildBenchmarkSuites(
           pinLine: `${b.run?.configuration ? `${b.run.configuration} · ` : ""}${b.model}@${shortCommit(b.commit)} · ${b.version}`,
           measured: true,
           metrics: metricViews(b, metrics),
-          ncrps: b.metrics.crps_norm ?? null,
-          crps: b.metrics.crps,
-          mae: b.metrics.mae ?? null,
-          rmse: b.metrics.rmse ?? null,
-          wall: b.resources?.wall_seconds ?? null,
-          cpu: b.resources?.cpu_seconds ?? null,
-          mem: b.resources?.peak_memory_mb ?? null,
+          values: b.metrics,
           suiteLine: `${suiteIdOf(b) ?? b.harness.tool} · ${b.commit.slice(0, 12)}…`,
         };
       })
       .sort(
         (a, b) =>
-          (a.ncrps ?? a.crps ?? Infinity) - (b.ncrps ?? b.crps ?? Infinity),
+          (a.values.crps_norm ?? a.values.crps) -
+          (b.values.crps_norm ?? b.values.crps),
       );
 
     const measuredModels = new Set(runs.map((b) => b.model));
@@ -250,13 +243,7 @@ export function buildBenchmarkSuites(
           pinLine: `${m.id}@${shortCommit(stable.commit)} · ${stable.version}`,
           measured: false,
           metrics: [],
-          ncrps: null,
-          crps: null,
-          mae: null,
-          rmse: null,
-          wall: null,
-          cpu: null,
-          mem: null,
+          values: {},
           suiteLine: `${m.id}@${shortCommit(stable.commit)}`,
         };
       });
@@ -299,6 +286,16 @@ export function buildBenchmarkSuites(
           : datasetName,
       countLine: `${measuredModels.size} of ${models.length} listed models evaluated`,
       measured: measuredModels.size,
+      columns: inMetricOrder(metrics)
+        .filter((m) => runs.some((b) => b.metrics[m.id] !== undefined))
+        .map((m) => ({
+          id: m.id,
+          label: m.displayName,
+          description: m.description,
+          target: m.target,
+          targetBehavior: m.targetBehavior,
+          optimizationDirection: m.optimizationDirection,
+        })),
       runContext,
       pendingNote,
       rows: [...measuredRows, ...pendingRows],

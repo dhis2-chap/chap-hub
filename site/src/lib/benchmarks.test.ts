@@ -7,6 +7,11 @@ import {
   loadBenchmarks,
   RESULTS_FILE,
 } from "./benchmarks";
+import {
+  inMetricOrder,
+  metricRankKey,
+  type MetricColumn,
+} from "./metrics";
 import { loadRegistry, shortCommit, stableVersion } from "./registry";
 import type { Benchmark, MetricInfo } from "./schema";
 
@@ -64,7 +69,6 @@ function smokeRun(overrides: Partial<Benchmark> = {}): Benchmark {
       samples: 200,
     },
     metrics: { crps: 42.6692, mae: 57.0358, rmse: 108.3282, crps_norm: 0.045345 },
-    resources: { wall_seconds: 56.61, cpu_seconds: 22.05, peak_memory_mb: 2061.8 },
     ...overrides,
   });
 }
@@ -99,14 +103,13 @@ describe("loadBenchmarks", () => {
     expect(metrics).toEqual(METRICS);
   });
 
-  it("round-trips the run, extra metric and resource fields", () => {
+  it("round-trips the run and extra metric fields", () => {
     write(smokeRun());
     const [loaded] = loadBenchmarks(registry, root).results;
     expect(loaded.run?.configuration).toBe("monthly_climate");
     expect(loaded.run?.samples).toBe(200);
     expect(loaded.metrics.rmse).toBeCloseTo(108.3282);
     expect(loaded.metrics.crps_norm).toBeCloseTo(0.045345);
-    expect(loaded.resources?.peak_memory_mb).toBeCloseTo(2061.8);
   });
 
   it("rejects a metric chap-core's definitions do not describe", () => {
@@ -151,6 +154,8 @@ describe("buildBenchmarkSuites", () => {
 
     expect(suite.heading).toBe("Vietnam monthly · horizon 3");
     expect(suite.countLine).toBe("1 of 4 listed models evaluated");
+    // Columns are the metrics the suite's runs record, in chap-core's default order.
+    expect(suite.columns.map((c) => c.id)).toEqual(["mae", "rmse", "crps", "crps_norm"]);
     expect(suite.runContext).toContainEqual({ k: "Observations", v: "2,808 rows" });
     expect(suite.pendingNote).toMatch(/^Three listed models/);
 
@@ -168,12 +173,12 @@ describe("buildBenchmarkSuites", () => {
     );
     // The run record carries every metric, named and described by chap-core.
     expect(first.metrics.map((m) => m.label)).toEqual([
-      "CRPS",
-      "CRPS Normalized",
       "MAE",
       "RMSE",
+      "CRPS",
+      "CRPS Normalized",
     ]);
-    expect(first.metrics[2]).toEqual({
+    expect(first.metrics[0]).toEqual({
       id: "mae",
       label: "MAE",
       value: "57.04",
@@ -182,8 +187,7 @@ describe("buildBenchmarkSuites", () => {
     for (const row of rest) {
       expect(row.measured).toBe(false);
       expect(row.metrics).toEqual([]);
-      expect(row.ncrps).toBeNull();
-      expect(row.crps).toBeNull();
+      expect(row.values).toEqual({});
     }
   });
 
@@ -198,7 +202,6 @@ describe("buildBenchmarkSuites", () => {
         commit: arimaStable.commit,
         run: undefined,
         metrics: { crps: 39.2, crps_norm: 0.041 },
-        resources: undefined,
       }),
     ], METRICS)[0];
     expect(suite.rows.slice(0, 2).map((r) => r.modelId)).toEqual([
@@ -207,5 +210,48 @@ describe("buildBenchmarkSuites", () => {
     ]);
     expect(suite.countLine).toBe("2 of 4 listed models evaluated");
     expect(suite.pendingNote).toMatch(/^Two listed models/);
+  });
+});
+
+describe("metricRankKey", () => {
+  const column = (overrides: Partial<MetricColumn>): MetricColumn => ({
+    id: "m",
+    label: "M",
+    description: "",
+    target: null,
+    targetBehavior: "closest",
+    optimizationDirection: "minimize",
+    ...overrides,
+  });
+
+  it("ranks lower first when minimised and higher first when maximised", () => {
+    expect(metricRankKey(column({}), 3)).toBeLessThan(metricRankKey(column({}), 4));
+    const max = column({ optimizationDirection: "maximize" });
+    expect(metricRankKey(max, 4)).toBeLessThan(metricRankKey(max, 3));
+  });
+
+  it("ranks by distance to a target, either side", () => {
+    const ratio = column({ target: 0.5, optimizationDirection: null });
+    expect(metricRankKey(ratio, 0.45)).toBeCloseTo(0.05);
+    expect(metricRankKey(ratio, 0.6)).toBeCloseTo(0.1);
+  });
+
+  it("ranks only the shortfall below an at-least target", () => {
+    const coverage = column({ target: 0.8, targetBehavior: "at_least", optimizationDirection: null });
+    expect(metricRankKey(coverage, 0.9)).toBe(0);
+    expect(metricRankKey(coverage, 0.6)).toBeCloseTo(0.2);
+  });
+});
+
+describe("inMetricOrder", () => {
+  it("follows chap-core's default order, appending metrics it does not name", () => {
+    const ids = ["crps", "newcomer", "mae", "crps_log1p", "later"];
+    expect(inMetricOrder(ids.map((id) => ({ id }))).map((m) => m.id)).toEqual([
+      "crps_log1p",
+      "mae",
+      "crps",
+      "newcomer",
+      "later",
+    ]);
   });
 });

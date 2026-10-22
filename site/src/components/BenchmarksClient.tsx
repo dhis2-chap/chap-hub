@@ -1,50 +1,155 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BenchmarkRowView, BenchmarkSuiteView } from "@/lib/benchmarks";
+import {
+  DEFAULT_METRIC_COLUMNS,
+  metricRankKey,
+  type MetricColumn,
+} from "@/lib/metrics";
 
 /**
  * The benchmark suites, one table after another, each row opening its
  * run record in a centred modal so the full metric list stays out of the
- * page flow. Sorting and the open row are the only client state;
- * everything rendered comes from the build-time suite views.
+ * page flow. The shown metrics, sorting and the open row are the only
+ * client state; everything rendered comes from the build-time suite views.
  */
 
-type SortKey = "ncrps" | "crps" | "mae" | "rmse" | "wall" | "mem";
+/** Remembers the visitor's metric picks; storage may be unavailable. */
+const STORAGE_KEY = "chap-hub:benchmark-metrics";
 
-const HEADERS: { key: SortKey | null; label: string }[] = [
-  { key: null, label: "#" },
-  { key: null, label: "Model · pin" },
-  { key: "ncrps", label: "nCRPS" },
-  { key: "crps", label: "CRPS" },
-  { key: "mae", label: "MAE" },
-  { key: "rmse", label: "RMSE" },
-  { key: "wall", label: "Wall" },
-  { key: "mem", label: "Peak mem" },
-  { key: null, label: "Status" },
-];
-
-const GRID = "grid-cols-[36px_minmax(0,1.9fr)_repeat(6,minmax(0,1fr))_100px]";
-
-/** Metrics already shown as headline figures at the top of the modal. */
-const HEADLINE_IDS = new Set(["crps_norm", "crps", "mae", "rmse"]);
-
-function fmt(v: number | null, digits: number): string {
-  return v === null ? "—" : v.toFixed(digits);
+function readPicks(): string[] | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) &&
+      parsed.every((id) => typeof id === "string")
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
 }
 
-function fmtMem(v: number | null): string {
-  return v === null
-    ? "—"
-    : `${v.toLocaleString("en-US", {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-      })} MB`;
+function writePicks(ids: string[]) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+  } catch {
+    // Not remembered; the picks still apply for this visit.
+  }
 }
 
-function fmtSeconds(v: number | null): string {
-  return v === null ? "—" : `${v.toFixed(2)} s`;
+const HEAD_TYPE =
+  "overflow-hidden text-ellipsis whitespace-nowrap font-brand text-[10px] font-medium uppercase tracking-[0.09em]";
+const HEAD = `${HEAD_TYPE} text-ink-3`;
+
+function valueOf(row: BenchmarkRowView, id: string): string {
+  return row.metrics.find((m) => m.id === id)?.value ?? "—";
+}
+
+function MetricPicker({
+  columns,
+  selected,
+  onChange,
+}: {
+  columns: MetricColumn[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (e: PointerEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  // Keep chap-core's metric order whatever order the boxes were ticked in.
+  const toggle = (id: string) =>
+    onChange(
+      columns
+        .map((c) => c.id)
+        .filter((c) => (c === id ? !selected.includes(c) : selected.includes(c))),
+    );
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        className="d2-button d2-button-small"
+        aria-expanded={open}
+        aria-haspopup="true"
+        onClick={() => setOpen((o) => !o)}
+      >
+        Metrics ({selected.length} of {columns.length}) ▾
+      </button>
+      {open ? (
+        <div className="absolute right-0 z-20 mt-1 w-[min(340px,calc(100vw-32px))] rounded-[3px] border border-line bg-surface py-2 shadow-lift">
+          <div className="flex items-center justify-between gap-3 px-4 pb-2">
+            <span className="font-brand text-[10px] font-medium uppercase tracking-[0.09em] text-ink-3">
+              Shown metrics
+            </span>
+            <span className="flex gap-3 text-[12px]">
+              <button
+                type="button"
+                className="cursor-pointer border-0 bg-transparent p-0 text-brand hover:underline"
+                onClick={() => onChange(columns.map((c) => c.id))}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                className="cursor-pointer border-0 bg-transparent p-0 text-brand hover:underline"
+                onClick={() =>
+                  onChange(
+                    DEFAULT_METRIC_COLUMNS.filter((id) =>
+                      columns.some((c) => c.id === id),
+                    ),
+                  )
+                }
+              >
+                Default
+              </button>
+            </span>
+          </div>
+          <ul className="max-h-[360px] overflow-y-auto">
+            {columns.map((c) => (
+              <li key={c.id}>
+                <label className="flex cursor-pointer items-start gap-2.5 px-4 py-1.5 hover:bg-surface-2">
+                  <input
+                    type="checkbox"
+                    className="mt-[3px] accent-brand"
+                    checked={selected.includes(c.id)}
+                    onChange={() => toggle(c.id)}
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-[13px] text-ink">{c.label}</span>
+                    {c.description ? (
+                      <span className="block text-[11.5px] leading-[1.4] text-ink-3">
+                        {c.description}
+                      </span>
+                    ) : null}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function Figure({
@@ -72,7 +177,13 @@ function Figure({
   );
 }
 
-function RunRecord({ row }: { row: BenchmarkRowView }) {
+function RunRecord({
+  row,
+  shown,
+}: {
+  row: BenchmarkRowView;
+  shown: string[];
+}) {
   if (!row.measured) {
     return (
       <p className="max-w-[60ch] text-[14px] leading-[1.6] text-ink-2">
@@ -82,20 +193,23 @@ function RunRecord({ row }: { row: BenchmarkRowView }) {
       </p>
     );
   }
-  const rest = row.metrics.filter((m) => !HEADLINE_IDS.has(m.id));
+  // The metrics picked for the table head the record; the rest follow.
+  const headline = row.metrics.filter((m) => shown.includes(m.id));
+  const rest = row.metrics.filter((m) => !shown.includes(m.id));
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-line bg-line sm:grid-cols-4">
-        <Figure label="nCRPS" value={fmt(row.ncrps, 6)} strong />
-        <Figure label="CRPS" value={fmt(row.crps, 4)} />
-        <Figure label="MAE" value={fmt(row.mae, 4)} />
-        <Figure label="RMSE" value={fmt(row.rmse, 4)} />
-      </div>
+      {headline.length > 0 ? (
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-line bg-line sm:grid-cols-4">
+          {headline.map((m, i) => (
+            <Figure key={m.id} label={m.label} value={m.value} strong={i === 0} />
+          ))}
+        </div>
+      ) : null}
 
       {rest.length > 0 ? (
         <section>
           <h3 className="mb-2 font-brand text-[13px] font-medium text-ink">
-            All recorded metrics
+            {headline.length > 0 ? "Other recorded metrics" : "All recorded metrics"}
           </h3>
           <dl className="grid gap-x-8 sm:grid-cols-2">
             {rest.map((m) => (
@@ -117,19 +231,6 @@ function RunRecord({ row }: { row: BenchmarkRowView }) {
           </dl>
         </section>
       ) : null}
-
-      {row.wall === null && row.cpu === null && row.mem === null ? null : (
-        <section>
-          <h3 className="mb-2 font-brand text-[13px] font-medium text-ink">
-            Resources
-          </h3>
-          <div className="grid grid-cols-3 gap-px overflow-hidden rounded-[3px] border border-line bg-line">
-            <Figure label="Wall time" value={fmtSeconds(row.wall)} />
-            <Figure label="CPU time" value={fmtSeconds(row.cpu)} />
-            <Figure label="Peak memory" value={fmtMem(row.mem)} />
-          </div>
-        </section>
-      )}
     </div>
   );
 }
@@ -139,12 +240,14 @@ function RunRecordModal({
   suite,
   rows,
   index,
+  shown,
   onStep,
 }: {
   dialogRef: React.RefObject<HTMLDialogElement | null>;
   suite: BenchmarkSuiteView;
   rows: BenchmarkRowView[];
   index: number;
+  shown: string[];
   onStep: (index: number) => void;
 }) {
   const row = rows[index];
@@ -189,7 +292,7 @@ function RunRecordModal({
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        <RunRecord row={row} />
+        <RunRecord row={row} shown={shown} />
       </div>
 
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface-2 px-6 py-3">
@@ -234,15 +337,33 @@ function RunRecordModal({
   );
 }
 
-function SuiteTable({ suite }: { suite: BenchmarkSuiteView }) {
-  const [sortKey, setSortKey] = useState<SortKey>("ncrps");
+function SuiteTable({
+  suite,
+  shown,
+}: {
+  suite: BenchmarkSuiteView;
+  shown: string[];
+}) {
+  // Ranked by the first shown metric until a column is clicked.
+  const [sortPick, setSortPick] = useState<string | null>(null);
   const [openIndex, setOpenIndex] = useState(0);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
+  const columns = suite.columns.filter((c) => shown.includes(c.id));
+  // A sort column the visitor has since hidden falls back to the first shown.
+  const sortColumn =
+    columns.find((c) => c.id === sortPick) ?? columns[0] ?? null;
+  const rankOf = (row: BenchmarkRowView) => {
+    const v = sortColumn ? row.values[sortColumn.id] : undefined;
+    return v === undefined ? Infinity : metricRankKey(sortColumn!, v);
+  };
   const measured = suite.rows.filter((r) => r.measured);
-  const rows = [...measured]
-    .sort((a, b) => (a[sortKey] ?? Infinity) - (b[sortKey] ?? Infinity))
-    .concat(suite.rows.filter((r) => !r.measured));
+  const rows = (
+    sortColumn ? [...measured].sort((a, b) => rankOf(a) - rankOf(b)) : measured
+  ).concat(suite.rows.filter((r) => !r.measured));
+  const grid = {
+    gridTemplateColumns: `36px minmax(200px,1.9fr) repeat(${columns.length}, minmax(96px,1fr)) 100px`,
+  };
 
   return (
     <>
@@ -261,32 +382,28 @@ function SuiteTable({ suite }: { suite: BenchmarkSuiteView }) {
       </div>
 
       <div className="overflow-x-auto rounded-[3px] border border-line bg-surface">
-        <div className="min-w-[980px]">
+        <div style={{ minWidth: 400 + columns.length * 108 }}>
           <div
-            className={`grid ${GRID} gap-3 border-b border-line bg-surface-2 px-5 py-[11px]`}
+            style={grid}
+            className="grid gap-3 border-b border-line bg-surface-2 px-5 py-[11px]"
           >
-            {HEADERS.map((h) =>
-              h.key ? (
-                <button
-                  key={h.label}
-                  type="button"
-                  onClick={() => setSortKey(h.key!)}
-                  className={`cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap border-0 bg-transparent p-0 text-right font-brand text-[10px] font-medium uppercase tracking-[0.09em] ${
-                    sortKey === h.key ? "text-brand" : "text-ink-3"
-                  }`}
-                >
-                  {h.label}
-                  {sortKey === h.key ? " ↑" : ""}
-                </button>
-              ) : (
-                <span
-                  key={h.label}
-                  className="overflow-hidden text-ellipsis whitespace-nowrap font-brand text-[10px] font-medium uppercase tracking-[0.09em] text-ink-3"
-                >
-                  {h.label}
-                </span>
-              ),
-            )}
+            <span className={HEAD}>#</span>
+            <span className={HEAD}>Model · pin</span>
+            {columns.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                title={c.description}
+                onClick={() => setSortPick(c.id)}
+                className={`${HEAD_TYPE} cursor-pointer border-0 bg-transparent p-0 text-right ${
+                  sortColumn?.id === c.id ? "text-brand" : "text-ink-3"
+                }`}
+              >
+                {c.label}
+                {sortColumn?.id === c.id ? " ↑" : ""}
+              </button>
+            ))}
+            <span className={HEAD}>Status</span>
           </div>
           {rows.map((row, i) => (
             <button
@@ -301,7 +418,8 @@ function SuiteTable({ suite }: { suite: BenchmarkSuiteView }) {
                   ?.querySelector<HTMLElement>("[data-autofocus]")
                   ?.focus();
               }}
-              className={`grid w-full ${GRID} cursor-pointer items-center gap-3 border-b border-l-[3px] border-b-line border-l-transparent py-[13px] pl-[17px] pr-5 text-left last:border-b-0 hover:border-l-brand hover:bg-surface-2 ${
+              style={grid}
+              className={`grid w-full cursor-pointer items-center gap-3 border-b border-l-[3px] border-b-line border-l-transparent py-[13px] pl-[17px] pr-5 text-left last:border-b-0 hover:border-l-brand hover:bg-surface-2 ${
                 row.measured ? "" : "opacity-[0.62]"
               }`}
             >
@@ -316,24 +434,18 @@ function SuiteTable({ suite }: { suite: BenchmarkSuiteView }) {
                   {row.pinLine}
                 </span>
               </span>
-              <span className="text-right font-mono text-[13.5px] text-ink">
-                {fmt(row.ncrps, 6)}
-              </span>
-              <span className="text-right font-mono text-[13px] text-ink-2">
-                {fmt(row.crps, 4)}
-              </span>
-              <span className="text-right font-mono text-[13px] text-ink-2">
-                {fmt(row.mae, 4)}
-              </span>
-              <span className="text-right font-mono text-[13px] text-ink-2">
-                {fmt(row.rmse, 4)}
-              </span>
-              <span className="text-right font-mono text-[13px] text-ink-2">
-                {row.wall === null ? "—" : `${row.wall.toFixed(1)} s`}
-              </span>
-              <span className="text-right font-mono text-[13px] text-ink-2">
-                {fmtMem(row.mem)}
-              </span>
+              {columns.map((c) => (
+                <span
+                  key={c.id}
+                  className={`text-right font-mono ${
+                    sortColumn?.id === c.id
+                      ? "text-[13.5px] text-ink"
+                      : "text-[13px] text-ink-2"
+                  }`}
+                >
+                  {valueOf(row, c.id)}
+                </span>
+              ))}
               <span
                 className={`justify-self-start whitespace-nowrap rounded-[3px] border px-1.5 py-0.5 font-mono text-[10.5px] ${
                   row.measured
@@ -358,6 +470,7 @@ function SuiteTable({ suite }: { suite: BenchmarkSuiteView }) {
         suite={suite}
         rows={rows}
         index={openIndex}
+        shown={shown}
         onStep={setOpenIndex}
       />
     </>
@@ -365,15 +478,40 @@ function SuiteTable({ suite }: { suite: BenchmarkSuiteView }) {
 }
 
 export function BenchmarkSuites({ suites }: { suites: BenchmarkSuiteView[] }) {
+  // Every metric any suite records, in chap-core's default order.
+  const columns = [
+    ...new Map(suites.flatMap((s) => s.columns).map((c) => [c.id, c])).values(),
+  ];
+  const defaults = DEFAULT_METRIC_COLUMNS.filter((id) =>
+    columns.some((c) => c.id === id),
+  );
+  const [shown, setShown] = useState(defaults);
+
+  // Restored after hydration so the prerendered table matches the first render.
+  useEffect(() => {
+    const picks = readPicks()?.filter((id) => columns.some((c) => c.id === id));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (picks) setShown(picks);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (suites.length === 0) return null;
   return (
     <>
-      <section className="mx-auto max-w-[1240px] px-5 sm:px-8 pt-9">
-        <p className="text-[13px] text-ink-2">
-          Click a column to sort, a row to open its run record. MAE, RMSE and
-          CRPS are in cases and only comparable within one suite; normalised
-          CRPS is the cross-dataset figure.
+      <section className="mx-auto flex max-w-[1240px] flex-wrap items-start justify-between gap-x-6 gap-y-3 px-5 pt-9 sm:px-8">
+        <p className="max-w-[80ch] text-[13px] text-ink-2">
+          Click a column to sort, a row to open its run record, and pick the
+          metrics to show. MAE, RMSE and CRPS are in cases and only comparable
+          within one suite; normalised CRPS is the cross-dataset figure.
         </p>
+        <MetricPicker
+          columns={columns}
+          selected={shown}
+          onChange={(ids) => {
+            setShown(ids);
+            writePicks(ids);
+          }}
+        />
       </section>
       {suites.map((suite) => (
         <section
@@ -383,7 +521,7 @@ export function BenchmarkSuites({ suites }: { suites: BenchmarkSuiteView[] }) {
           <h2 className="mb-2 font-brand text-[22px] font-medium text-ink">
             {suite.heading}
           </h2>
-          <SuiteTable suite={suite} />
+          <SuiteTable suite={suite} shown={shown} />
         </section>
       ))}
     </>
