@@ -16,9 +16,9 @@ import {
 
 try {
   const registry = loadRegistry();
-  const templates = registry.models.filter((m) => m.kind === "template").length;
+  const starters = registry.models.filter((m) => m.kind === "starter").length;
   console.log(
-    `registry.yaml OK — ${registry.models.length - templates} models, ${templates} templates\n`,
+    `registry.yaml OK — ${registry.models.length - starters} models, ${starters} starters\n`,
   );
   for (const model of registry.models) {
     const stable = stableVersion(model);

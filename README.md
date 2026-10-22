@@ -1,19 +1,18 @@
-# Chap Model Marketplace
+# Chap Hub
 
 A curated, verified catalog of forecasting models for [Chap](https://chap.dhis2.org),
 the Climate & Health Analytics Platform. **This repository is the marketplace**:
 the YAML files at the root are the source of truth, and the website is a
 rendering of them.
 
-Nothing is listed without a pull request approved by three Chap maintainers —
-the merge to `main` is the verification. The same gate applies to every new
-version pin, so a `stable` channel pointer is always a reviewed commit.
+Listed model versions are marked **Verified** after a compatibility review.
+Verification checks the pinned revision and published image, chapkit service
+registration, and training and prediction. **Verified does not assess or
+guarantee model performance.** See [Model verification](https://chap-marketplace.dhis2.org/verification)
+for the checks and their limitations.
 
-That verification is about the **pin**, not the forecast: it says a revision
-is what it claims to be and runs as a chapkit service. What each model's own
-authors will vouch for is a separate axis, carried per model as
-`assessed_status` (chapkit's `AssessedStatus`) and surfaced separately by the
-site. No listed model is currently self-assessed `green`.
+The authors' own `assessed_status` remains in the registry as data; the site
+does not show it.
 
 ## Layout
 
@@ -35,7 +34,7 @@ the two, so they cannot drift; `:latest` moves and is never a pin.
 
 Channels (`stable` / `latest`) are named pointers into the version list;
 `channels.stable` must point at a version with `status: verified`. Files also
-declare `kind` — a forecasting `model`, or a `template` for authors to copy —
+declare `kind` — a forecasting `model`, or a `starter` for authors to copy —
 and the format is documented with an annotated example in
 [models/README.md](models/README.md).
 
@@ -48,9 +47,9 @@ and the format is documented with an annotated example in
 | [Auto-ARIMA](models/auto_arima_chapkit.yaml) | red | R · fable | 0–12 |
 | [GHRmodel](models/chapkit_ghr_model.yaml) | red | R · INLA | 1–12 |
 
-Templates — scaffolding, not forecasting models:
+Starters — scaffolding, not forecasting models:
 
-| Template | `assessed_status` | Framework |
+| Starter | `assessed_status` | Framework |
 |---|---|---|
 | [Minimalist Example (Python)](models/chapkit_minimalist_example_py.yaml) | red | Python · scikit-learn |
 | [Minimalist Example (R)](models/chapkit_minimalist_example_r.yaml) | red | R · `lm()` |
@@ -146,9 +145,8 @@ Vercel's SSO. So the tab is the history of what is actually live.
   shows no scores at all — not an illustrative sparkline, not a placeholder
   number. The benchmarks page and each model's Benchmarks tab render only
   the fetched results.
-- `assessed_status` is transcribed from each service's own chapkit metadata
-  and shown as the authors' claim, never as a marketplace grade. The two
-  signals are never merged into one badge.
+- `assessed_status` is transcribed from each service's own chapkit metadata.
+  It is kept in the registry but not shown on the site.
 - In-review pins come from real open PRs at build time and are labeled with
   the build timestamp; the site never invents proposals.
 - Presentation-only metadata the schema doesn't carry yet (framework labels,
@@ -167,7 +165,3 @@ how the comparison will be run — datasets, backtest parameters, ranking — is
 still being decided; the methodology will be documented in
 [benchmarks/README.md](benchmarks/README.md) once it is settled. For the underlying evaluation command, see the Chap guide to
 [evaluating models](https://chap.dhis2.org/chap-modeling-platform/external_models/running_models_in_chap/).
-
-For a model the server has not benchmarked, the only quality signal on the
-site is its author-assessed status — which is why it is labelled as the
-authors' own claim everywhere it appears.

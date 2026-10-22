@@ -18,7 +18,7 @@ export function Footer() {
           <div className="flex items-center gap-3">
             <Dhis2Mark className="h-[22px] w-auto text-white" />
             <span className="text-[14px] font-medium leading-none">
-              Chap Model Marketplace
+              Chap Hub
             </span>
           </div>
           <p className="mt-4 max-w-[44ch] text-[15px] leading-[1.7] text-board-ink-2">
@@ -28,12 +28,17 @@ export function Footer() {
         </div>
         <div>
           <div className="mb-3.5 text-[13px] font-medium uppercase tracking-[0.1em] text-board-ink-2">
-            Marketplace
+            Chap Hub
           </div>
           <ul className="space-y-2.5 text-[15px]">
             <li>
               <Link href="/" className={LinkClass}>
                 Models
+              </Link>
+            </li>
+            <li>
+              <Link href="/verification" className={LinkClass}>
+                Model verification
               </Link>
             </li>
             <li>

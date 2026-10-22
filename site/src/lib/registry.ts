@@ -151,8 +151,8 @@ export function verifiedCount(model: Model): number {
   return model.versions.filter((v) => v.status === "verified").length;
 }
 
-export function isTemplate(model: Model): boolean {
-  return model.kind === "template";
+export function isStarter(model: Model): boolean {
+  return model.kind === "starter";
 }
 
 export function marketplaceStats(registry: Registry) {
@@ -160,11 +160,11 @@ export function marketplaceStats(registry: Registry) {
     (n, m) => n + verifiedCount(m),
     0,
   );
-  const templates = registry.models.filter(isTemplate).length;
+  const starters = registry.models.filter(isStarter).length;
   return {
-    /** Forecasting models only — templates are counted separately. */
-    models: registry.models.length - templates,
-    templates,
+    /** Forecasting models only — starters are counted separately. */
+    models: registry.models.length - starters,
+    starters,
     verifiedPins,
     reviews: verifiedPins * registry.index.review_policy.required_approvals,
   };

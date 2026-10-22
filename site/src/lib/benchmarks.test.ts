@@ -154,9 +154,9 @@ describe("buildBenchmarkSuites", () => {
     expect(suite.runContext).toContainEqual({ k: "Observations", v: "2,808 rows" });
     expect(suite.pendingNote).toMatch(/^Three listed models/);
 
-    // Templates are scaffolding, never listed as a model awaiting a run.
+    // Starters are scaffolding, never listed as a model awaiting a run.
     expect(suite.rows).toHaveLength(
-      registry.models.filter((m) => m.kind !== "template").length,
+      registry.models.filter((m) => m.kind !== "starter").length,
     );
     const [first, ...rest] = suite.rows;
     expect(first.measured).toBe(true);

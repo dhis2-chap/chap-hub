@@ -1,4 +1,4 @@
-# Chap Model Marketplace
+# Chap Hub
 
 Curated catalog of chapkit-based epidemiological forecasting models for
 [Chap](https://chap.dhis2.org/) (Climate & Health Analytics Platform, DHIS2).
@@ -27,8 +27,8 @@ site in `site/` is a build-time rendering of it. No auth, no server state.
 
 ## Decisions and invariants
 
-- **Chapkit-only.** Only chapkit 2 ML services are listed (any 2.x minor). The install
-  path is `chap-admin install <id>` (chap-core) against a running chap: it starts
+- **Chapkit-only.** Only chapkit ML services are listed; no chapkit major
+  version is hard-coded. The install path is `chap-admin install <id>` (chap-core) against a running chap: it starts
   the stable pin, waits for self-registration and adds the entry's
   configurations. Not hand-written compose overlays, and not
   `chapkit mlproject run` — that was the schema_version 1 world.
@@ -38,17 +38,22 @@ site in `site/` is a build-time rendering of it. No auth, no server state.
 - **Two independent signals, never merged.** The review gate verifies the
   *pin* (it is the revision it claims to be and runs as a chapkit service).
   `assessed_status` is the *authors'* own chapkit `AssessedStatus`, copied
-  verbatim — the marketplace never assigns, upgrades or reinterprets it. Keep
-  them visually and verbally distinct everywhere. No listed model is
+  verbatim — the marketplace never assigns, upgrades or reinterprets it. It
+  stays in the registry as data but is not shown on the site. Every listed version
+  is verified, so no "Verified" badges: the home intro says so once, with
+  "verified" linking to `/verification`; version tables tag only the
+  non-verified exceptions (unstable, deprecated, yanked). No listed model is
   self-assessed `green`; three of the four forecasting models are `red`
   or `gray`.
-- **Templates are not models.** `kind: template` marks scaffolding (the two
+- **Starters are not models.** `kind: starter` marks scaffolding (the two
   minimalist examples). Counted, filtered and labelled separately; never
-  presented as something to forecast with.
+  presented as something to forecast with. Not called "template": in chap-core
+  every installed model is a model template (`ModelTemplateDB`), configured
+  into configured models.
 - **Benchmark results come from the benchmarking server, at deploy time.**
   Only backtests of listed pins (template = `service_id`, `sourceDigest` = a
   pinned commit, configured model = `<service_id>:<configuration key>`) are
-  kept. Templates never appear on the leaderboard.
+  kept. Starters never appear on the leaderboard.
   `CHAP_API_TOKEN` can write to that server: it is used only in
   `deploy.yml`, which must never run on `pull_request`. The deploy fails if
   the fetch fails — never ship an empty leaderboard in place of the real one.

@@ -46,24 +46,24 @@ describe("the real registry", () => {
     expect(ghr).toBeDefined();
     const stable = stableVersion(ghr!);
     expect(displayPin(ghr!, stable)).toBe(
-      "github.com/chap-models/chapkit_ghr_model@dfb2e3f",
+      "github.com/chap-models/chapkit_ghr_model@84fbe77",
     );
     expect(fullPin(ghr!, stable)).toBe(
-      "https://github.com/chap-models/chapkit_ghr_model@dfb2e3fdd25cbf7a369cf078361814056e7fe709",
+      "https://github.com/chap-models/chapkit_ghr_model@84fbe77734f51a592a215f34b2b8731c3acbed2f",
     );
   });
 
   it("derives the deployable image pin from the same commit", () => {
     const ghr = registry.models.find((m) => m.id === "chapkit_ghr_model")!;
     expect(imageRef(ghr, stableVersion(ghr))).toBe(
-      "ghcr.io/chap-models/chapkit_ghr_model:sha-dfb2e3f",
+      "ghcr.io/chap-models/chapkit_ghr_model:sha-84fbe77",
     );
   });
 
-  it("counts forecasting models and templates separately", () => {
+  it("counts forecasting models and starters separately", () => {
     const stats = marketplaceStats(registry);
-    expect(stats.models + stats.templates).toBe(registry.models.length);
-    expect(stats.templates).toBeGreaterThan(0);
+    expect(stats.models + stats.starters).toBe(registry.models.length);
+    expect(stats.starters).toBeGreaterThan(0);
   });
 
   it("counts reviews as verified pins × required approvals", () => {
@@ -115,6 +115,20 @@ describe("schema refinements", () => {
 
   it("accepts a well-formed model", () => {
     expect(modelSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("accepts a comparison model", () => {
+    expect(modelSchema.safeParse({ ...base, role: "comparison" }).success).toBe(true);
+  });
+
+  it("rejects a role other than comparison", () => {
+    const bad = { ...base, role: "baseline" };
+    expect(modelSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects a starter flagged as a comparison model", () => {
+    const bad = { ...base, kind: "starter", role: "comparison" };
+    expect(modelSchema.safeParse(bad).success).toBe(false);
   });
 
   it("rejects a service id that is not the kebab-case model id", () => {

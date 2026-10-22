@@ -201,8 +201,8 @@ export function buildBenchmarkSuites(
   metrics: MetricInfo[],
 ): BenchmarkSuiteView[] {
   const byId = new Map(registry.models.map((m) => [m.id, m]));
-  // Templates are scaffolding, not something to forecast with.
-  const models = registry.models.filter((m) => m.kind !== "template");
+  // Starters are scaffolding, not something to forecast with.
+  const models = registry.models.filter((m) => m.kind !== "starter");
   const datasets = [...new Set(records.map((b) => b.dataset))].sort();
 
   return datasets.map((dataset) => {

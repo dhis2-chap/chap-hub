@@ -13,7 +13,6 @@ import {
   type Registry,
 } from "./registry";
 import type {
-  AssessedStatus,
   Benchmark,
   MetricInfo,
   Model,
@@ -23,7 +22,6 @@ import type {
 import { benchmarksFor, metricViews, type MetricView } from "./benchmarks";
 import type { Proposals } from "./proposals";
 import {
-  ASSESSED_STATUS_COPY,
   COV_LABEL,
   datasetNameFor,
   presentationFor,
@@ -41,9 +39,6 @@ export interface ModelCardView {
   shortName: string;
   repo: string;
   kind: ModelKind;
-  /** The author's own AssessedStatus — never a marketplace verdict. */
-  assessedStatus: AssessedStatus;
-  assessedLabel: string;
   summary: string;
   framework: string;
   language: string;
@@ -82,8 +77,6 @@ export function toCardView(model: Model): ModelCardView {
     shortName: pres.shortName,
     repo: repoPath(model),
     kind: model.kind,
-    assessedStatus: model.assessed_status,
-    assessedLabel: ASSESSED_STATUS_COPY[model.assessed_status].label,
     summary: model.summary,
     framework: pres.framework,
     language: pres.language,
@@ -208,10 +201,8 @@ export interface ModelDetailView {
   name: string;
   shortName: string;
   kind: ModelKind;
-  assessedStatus: AssessedStatus;
-  assessedLabel: string;
-  assessedBlurb: string;
   summary: string;
+  developedFor: string | null;
   repo: string;
   repoUrl: string;
   org: string;
@@ -219,6 +210,7 @@ export interface ModelDetailView {
     author: string;
     organization: string | null;
     citation: string | null;
+    originalSource: string | null;
   };
   framework: string;
   covLabel: string;
@@ -349,7 +341,6 @@ export function toDetailView(
   const latest = latestVersion(model);
   const required = registry.index.review_policy.required_approvals;
   const verifiedPins = verifiedCount(model);
-  const assessed = ASSESSED_STATUS_COPY[model.assessed_status];
 
   return {
     id: model.id,
@@ -357,10 +348,8 @@ export function toDetailView(
     name: model.display_name,
     shortName: pres.shortName,
     kind: model.kind,
-    assessedStatus: model.assessed_status,
-    assessedLabel: assessed.label,
-    assessedBlurb: assessed.blurb,
     summary: model.summary,
+    developedFor: model.developed_for ?? null,
     repo: repoSlug(model),
     repoUrl: model.source.repository,
     org: repoOrg(model),
@@ -368,6 +357,7 @@ export function toDetailView(
       author: model.attribution.author,
       organization: model.attribution.organization ?? null,
       citation: model.attribution.citation ?? null,
+      originalSource: model.attribution.original_source ?? null,
     },
     framework: pres.framework,
     covLabel: COV_LABEL[pres.covMode],

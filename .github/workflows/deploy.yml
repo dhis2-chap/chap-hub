@@ -12,6 +12,10 @@ name: deploy
 # only ever used here: this workflow never runs on pull requests, forked or
 # not. The server runs pending benchmarks every 15 minutes; the hourly
 # schedule keeps the published leaderboard at most an hour behind it.
+#
+# workflow_dispatch is the manual fallback for when GitHub drops a push event
+# and a merge never deploys (`gh workflow run deploy`), without needing a
+# dummy commit through a PR.
 
 on:
   push:
@@ -33,7 +37,7 @@ jobs:
   deploy:
     name: deploy to vercel
     runs-on: ubuntu-latest
-    # A manual run can name any branch; only main is published.
+    # A manual run can be started on any branch; only main is production.
     if: github.ref == 'refs/heads/main'
     # Naming an environment is what puts each run in the Deployments view;
     # `url` is that record's "View deployment" link. It resolves after the job,
