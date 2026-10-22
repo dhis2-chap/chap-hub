@@ -22,8 +22,9 @@ export interface Suite {
 }
 
 export const SUITES: Suite[] = [
-  { dataset: "rwanda-monthly", datasetName: "rwanda_evaluation_set", nPeriods: 3, nSplits: 2, stride: 1, nRetrain: 1 },
-  { dataset: "nepal-monthly", datasetName: "nepal_evaluation_set", nPeriods: 3, nSplits: 2, stride: 1, nRetrain: 1 },
+  { dataset: "vietnam-monthly", datasetName: "vietnam_evaluation_set", nPeriods: 3, nSplits: 6, stride: 1, nRetrain: 1 },
+  { dataset: "laos-monthly", datasetName: "laos_evaluation_set", nPeriods: 3, nSplits: 6, stride: 1, nRetrain: 1 },
+  { dataset: "thailand-monthly", datasetName: "thailand_evaluation_set", nPeriods: 3, nSplits: 6, stride: 1, nRetrain: 1 },
 ];
 
 /** The fields of GET /v1/crud/backtest-specifications/{id} that are read. */

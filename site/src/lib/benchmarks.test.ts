@@ -54,7 +54,7 @@ function smokeRun(overrides: Partial<Benchmark> = {}): Benchmark {
     model: multistep.id,
     version: multistepStable.version,
     commit: multistepStable.commit,
-    dataset: "rwanda-monthly",
+    dataset: "vietnam-monthly",
     harness: { tool: "chap eval" },
     run: {
       configuration: "monthly_climate",
@@ -149,7 +149,7 @@ describe("buildBenchmarkSuites", () => {
     expect(suites).toHaveLength(1);
     const suite = suites[0];
 
-    expect(suite.heading).toBe("Rwanda monthly · horizon 3");
+    expect(suite.heading).toBe("Vietnam monthly · horizon 3");
     expect(suite.countLine).toBe("1 of 4 listed models evaluated");
     expect(suite.runContext).toContainEqual({ k: "Observations", v: "2,808 rows" });
     expect(suite.pendingNote).toMatch(/^Three listed models/);

@@ -79,8 +79,9 @@ export function presentationFor(id: string): Presentation {
 
 /** Display names for the suite dataset ids in chap-api.ts. */
 export const DATASET_NAME: Record<string, string> = {
-  "rwanda-monthly": "Rwanda monthly",
-  "nepal-monthly": "Nepal monthly",
+  "vietnam-monthly": "Vietnam monthly",
+  "laos-monthly": "Laos monthly",
+  "thailand-monthly": "Thailand monthly",
 };
 
 export function datasetNameFor(id: string): string {

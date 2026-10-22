@@ -54,10 +54,10 @@ describe("toBenchmarks", () => {
         model: multistep.id,
         version: stable.version,
         commit: stable.commit,
-        dataset: "rwanda-monthly",
+        dataset: "vietnam-monthly",
         evaluated_at: "2026-09-30",
         harness: { tool: "chap 2.4.0" },
-        run: { configuration: "monthly_climate", horizon: 3, splits: 2 },
+        run: { configuration: "monthly_climate", horizon: 3, splits: 6 },
         metrics: {
           crps: 414.5,
           crps_norm: 0.006,
