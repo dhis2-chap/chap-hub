@@ -53,14 +53,14 @@ site in `site/` is a build-time rendering of it. No auth, no server state.
 - **Benchmark results come from the benchmarking server, at deploy time.**
   Only backtests of listed pins (template = `service_id`, `sourceDigest` = a
   pinned commit, configured model = `<service_id>:<configuration key>`) are
-  kept. Starters never appear on the leaderboard.
+  kept. Starters never appear in the benchmarks.
   `CHAP_API_TOKEN` can write to that server: it is used only in
   `deploy.yml`, which must never run on `pull_request`. The deploy fails if
-  the fetch fails — never ship an empty leaderboard in place of the real one.
-- **The benchmark methodology is undecided.** How the suites are ranked
-  (datasets, backtest parameters, ranking) is an open question. Never
-  document a benchmark methodology as decided — docs and site copy say it
-  will be "added soon". The benchmark views are behind `BENCHMARKS_LIVE` in
+  the fetch fails — never ship empty benchmarks in place of the real ones.
+- **The benchmark ranking is undecided.** How models are run is documented
+  briefly, linking to chap-core and chap_benchmarking rather than restating
+  them; how the suites are ranked is an open question. Never document a
+  ranking as decided. The benchmark views are behind `BENCHMARKS_LIVE` in
   `site/src/lib/flags.ts` (on since real results landed, 2026-10-05) and
   fall back to "coming soon" when a build has no results.
 - **No invented figures anywhere.** The mock benchmark fixtures were deleted

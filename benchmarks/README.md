@@ -30,8 +30,8 @@ The deploy workflow (`.github/workflows/deploy.yml`) runs on every push to
 
 Any failure — no token, an unreachable server, a suite that does not resolve
 to exactly one specification, a record the registry rejects — fails the
-deploy, so a stale or empty leaderboard is never shipped in place of the real
-one. Builds without the file (CI, local dev) render no results.
+deploy, so stale or empty benchmarks are never shipped in place of the real
+ones. Builds without the file (CI, local dev) render no results.
 
 The server's API is gated by a single `CHAP_API_TOKEN` that can write as well
 as read. It is a repository secret used only by the deploy workflow, which
@@ -66,8 +66,15 @@ and the site names and describes them with chap-core's own definitions; a
 metric with no definition fails the build. A backtest whose metric
 computation failed (no `crps`) is skipped.
 
-## Methodology — added soon
+## How models are run
 
-Which suites the marketplace ranks on, and how, is not settled yet; a full
-methodology description will be added here. Until then the site shows the
+The server's cron installs every listed pin with `chap-admin` and submits a
+backtest for each model on each suite's dataset it can run on (see
+[chap_benchmarking](https://github.com/dhis2-chap/chap_benchmarking)). The
+datasets come from
+[climate-health-data](https://github.com/dhis2/climate-health-data); a
+backtest is chap-core's expanding-window evaluation, described in
+[Evaluation Pipeline](https://chap.dhis2.org/chap-modeling-platform/contributor/evaluation_pipeline/).
+
+How the suites are ranked is not settled yet. Until it is, the site shows the
 server's results as recorded, provenance rather than a ranking.

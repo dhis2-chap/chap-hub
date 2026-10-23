@@ -16,7 +16,7 @@ const ENTRIES = [
   {
     kicker: "marketplace",
     title: "Benchmark results",
-    body: "Where benchmark results come from. Benchmarks will be added soon.",
+    body: "Where benchmark results come from and how the models are run.",
     href: "https://github.com/dhis2-chap/model-marketplace/blob/main/benchmarks/README.md",
   },
   {

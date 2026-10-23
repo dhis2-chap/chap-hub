@@ -160,8 +160,6 @@ Benchmarks tab) are behind `BENCHMARKS_LIVE` in `site/src/lib/flags.ts`, and
 show "coming soon" when a build has no results.
 
 Results are read from Chap's benchmarking server at each deploy (and hourly)
-and only backtests of listed pins are kept. Exactly
-how the comparison will be run — datasets, backtest parameters, ranking — is
-still being decided; the methodology will be documented in
-[benchmarks/README.md](benchmarks/README.md) once it is settled. For the underlying evaluation command, see the Chap guide to
-[evaluating models](https://chap.dhis2.org/chap-modeling-platform/external_models/running_models_in_chap/).
+and only backtests of listed pins are kept. How the models are run is in
+[benchmarks/README.md](benchmarks/README.md); how the suites are ranked is not
+settled yet.
