@@ -5,9 +5,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  ComposedChart,
   LabelList,
-  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -20,8 +18,8 @@ import type {
 } from "recharts/types/component/DefaultTooltipContent";
 
 /**
- * Benchmark charts. Every series rendered here comes from a real record in
- * the repo's benchmarks/ store — there are no illustrative fixtures behind
+ * Benchmark charts. Every series rendered here comes from a real record
+ * fetched from Chap's benchmarking server — there are no illustrative fixtures behind
  * these components, and nothing here derives a value it was not given.
  */
 
@@ -57,70 +55,10 @@ function ChartTooltip({
   );
 }
 
-export function CrpsByHorizonChart({
-  crps,
-  baseline,
-  shortName,
-}: {
-  crps: number[];
-  baseline: number[];
-  shortName: string;
-}) {
-  const hasBaseline = baseline.length > 0;
-  const data = crps.map((v, i) => ({
-    h: `h${i + 1}`,
-    model: v,
-    baseline: baseline[i],
-  }));
-  return (
-    <div>
-      <div className="h-[200px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 10, right: 8, bottom: 0, left: -22 }}>
-            <CartesianGrid vertical={false} stroke="var(--mp-border)" />
-            <XAxis dataKey="h" tick={AXIS_TICK} tickLine={false} axisLine={false} />
-            <YAxis domain={[0, 1.4]} ticks={[0, 0.5, 0.9, 1.4]} tick={AXIS_TICK} tickLine={false} axisLine={false} />
-            <Tooltip content={ChartTooltip} cursor={{ stroke: "var(--mp-border-strong)" }} />
-            {hasBaseline ? (
-              <Line
-                dataKey="baseline"
-                name="baseline"
-                stroke="var(--mp-text-3)"
-                strokeWidth={1.6}
-                strokeDasharray="4 3"
-                dot={false}
-                isAnimationActive={false}
-              />
-            ) : null}
-            <Line
-              dataKey="model"
-              name={shortName}
-              stroke="var(--mp-brand)"
-              strokeWidth={2.2}
-              dot={{ r: 3, fill: "var(--mp-surface)", stroke: "var(--mp-brand)", strokeWidth: 1.8 }}
-              isAnimationActive={false}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="mt-2.5 flex items-center gap-4 text-[11px] text-ink-2">
-        <span className="flex items-center gap-1.5">
-          <span className="h-0.5 w-3 bg-brand" /> {shortName}
-        </span>
-        {hasBaseline ? (
-          <span className="flex items-center gap-1.5">
-            <span className="h-0.5 w-3 bg-ink-3" /> baseline
-          </span>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
 export function ComparisonChart({
   items,
 }: {
-  items: { name: string; mean: number; self: boolean }[];
+  items: { name: string; crps: number; self: boolean }[];
 }) {
   return (
     <div>
@@ -137,9 +75,9 @@ export function ComparisonChart({
             />
             <YAxis domain={[0, 1.1]} ticks={[0, 0.4, 0.7, 1.1]} tick={AXIS_TICK} tickLine={false} axisLine={false} />
             <Tooltip content={ChartTooltip} cursor={{ fill: "var(--mp-surface-3)", fillOpacity: 0.4 }} />
-            <Bar dataKey="mean" name="mean CRPS" barSize={34} radius={[2, 2, 0, 0]} isAnimationActive={false}>
+            <Bar dataKey="crps" name="CRPS" barSize={34} radius={[2, 2, 0, 0]} isAnimationActive={false}>
               <LabelList
-                dataKey="mean"
+                dataKey="crps"
                 position="top"
                 formatter={(v: React.ReactNode) => Number(v).toFixed(2)}
                 style={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "var(--mp-text)" }}

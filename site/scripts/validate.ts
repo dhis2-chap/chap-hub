@@ -1,11 +1,11 @@
 /**
  * Standalone registry validation: `pnpm validate`.
- * Loads registry.yaml, every model file and every benchmarks/ file through
+ * Loads registry.yaml, every model file and any fetched benchmark results through
  * the same zod schemas the site build uses, so a PR gets a red check without
  * building the site. Stays offline — open-PR ingestion is build-only and
  * fail-soft, so it is not a gate.
  */
-import { loadBenchmarks } from "../src/lib/benchmarks";
+import { loadBenchmarks, RESULTS_FILE } from "../src/lib/benchmarks";
 import {
   displayPin,
   imageRef,
@@ -30,9 +30,9 @@ try {
     console.log(`      image   ${imageRef(model, stable)}`);
   }
 
-  const benchmarks = loadBenchmarks(registry, registry.root);
+  const benchmarks = loadBenchmarks(registry, registry.root).results;
   console.log(
-    `\nbenchmarks/ OK — ${benchmarks.length} result file${benchmarks.length === 1 ? "" : "s"}`,
+    `\n${RESULTS_FILE} OK — ${benchmarks.length} record${benchmarks.length === 1 ? "" : "s"}`,
   );
   for (const bench of benchmarks) {
     console.log(

@@ -1,15 +1,20 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { stringify } from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   buildBenchmarkSuites,
   loadBenchmarks,
-  skillOf,
+  RESULTS_FILE,
 } from "./benchmarks";
+import {
+  inMetricOrder,
+  metricRankKey,
+  type MetricColumn,
+} from "./metrics";
 import { loadRegistry, shortCommit, stableVersion } from "./registry";
-import type { Benchmark } from "./schema";
+import { toDetailView } from "./views";
+import type { Benchmark, MetricInfo } from "./schema";
 
 const registry = loadRegistry();
 const ghr = registry.models.find((m) => m.id === "chapkit_ghr_model")!;
@@ -17,9 +22,27 @@ const ghrStable = stableVersion(ghr);
 const multistep = registry.models.find((m) => m.id === "chapkit_simple_multistep_model")!;
 const multistepStable = stableVersion(multistep);
 
+function metric(id: string, displayName: string): MetricInfo {
+  return {
+    id,
+    displayName,
+    description: `${displayName} description`,
+    unit: null,
+    target: null,
+    targetBehavior: "closest",
+    optimizationDirection: "minimize",
+  };
+}
+
+const METRICS = [
+  metric("crps", "CRPS"),
+  metric("crps_norm", "CRPS Normalized"),
+  metric("mae", "MAE"),
+  metric("rmse", "RMSE"),
+];
+
 function benchmark(overrides: Partial<Benchmark> = {}): Benchmark {
   return {
-    schema_version: 1,
     model: ghr.id,
     version: ghrStable.version,
     commit: ghrStable.commit,
@@ -37,7 +60,7 @@ function smokeRun(overrides: Partial<Benchmark> = {}): Benchmark {
     model: multistep.id,
     version: multistepStable.version,
     commit: multistepStable.commit,
-    dataset: "laos-admin1-monthly",
+    dataset: "vietnam-monthly",
     harness: { tool: "chap eval" },
     run: {
       configuration: "monthly_climate",
@@ -46,8 +69,7 @@ function smokeRun(overrides: Partial<Benchmark> = {}): Benchmark {
       splits: 1,
       samples: 200,
     },
-    metrics: { crps: 42.6692, mae: 57.0358, rmse: 108.3282, norm_crps: 0.045345 },
-    resources: { wall_seconds: 56.61, cpu_seconds: 22.05, peak_memory_mb: 2061.8 },
+    metrics: { crps: 42.6692, mae: 57.0358, rmse: 108.3282, crps_norm: 0.045345 },
     ...overrides,
   });
 }
@@ -62,45 +84,45 @@ describe("loadBenchmarks", () => {
     fs.rmSync(root, { recursive: true, force: true });
   });
 
-  function write(b: Benchmark, relPath?: string) {
-    const file = path.join(
-      root,
-      relPath ?? `benchmarks/${b.model}/${b.version}/${b.dataset}.yaml`,
+  function write(...records: Benchmark[]) {
+    fs.mkdirSync(path.join(root, "benchmarks"));
+    fs.writeFileSync(
+      path.join(root, RESULTS_FILE),
+      JSON.stringify({ metrics: METRICS, results: records }),
     );
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, stringify(b));
   }
 
-  it("returns [] when the benchmarks directory does not exist", () => {
-    expect(loadBenchmarks(registry, root)).toEqual([]);
+  it("returns nothing when no results were fetched", () => {
+    expect(loadBenchmarks(registry, root)).toEqual({ metrics: [], results: [] });
   });
 
-  it("loads a valid file addressed by its (model, version, dataset) path", () => {
+  it("loads valid records and the metric definitions", () => {
     write(benchmark());
-    const loaded = loadBenchmarks(registry, root);
-    expect(loaded).toHaveLength(1);
-    expect(loaded[0].metrics.crps).toBe(0.5);
+    const { metrics, results } = loadBenchmarks(registry, root);
+    expect(results).toHaveLength(1);
+    expect(results[0].metrics.crps).toBe(0.5);
+    expect(metrics).toEqual(METRICS);
   });
 
-  it("round-trips the run, extra metric and resource fields", () => {
+  it("round-trips the run and extra metric fields", () => {
     write(smokeRun());
-    const [loaded] = loadBenchmarks(registry, root);
+    const [loaded] = loadBenchmarks(registry, root).results;
     expect(loaded.run?.configuration).toBe("monthly_climate");
     expect(loaded.run?.samples).toBe(200);
     expect(loaded.metrics.rmse).toBeCloseTo(108.3282);
-    expect(loaded.metrics.norm_crps).toBeCloseTo(0.045345);
-    expect(loaded.resources?.peak_memory_mb).toBeCloseTo(2061.8);
+    expect(loaded.metrics.crps_norm).toBeCloseTo(0.045345);
   });
 
-  it("rejects a file whose path disagrees with its content", () => {
-    const b = benchmark();
-    write(b, `benchmarks/${b.model}/${b.version}/other-dataset.yaml`);
-    expect(() => loadBenchmarks(registry, root)).toThrow(/does not match the file path/);
+  it("rejects a metric chap-core's definitions do not describe", () => {
+    write(benchmark({ metrics: { crps: 0.5, mystery: 1 } }));
+    expect(() => loadBenchmarks(registry, root)).toThrow(
+      /metric "mystery" has no definition/,
+    );
   });
 
-  it("rejects a file outside the <model>/<version>/<dataset> layout", () => {
-    write(benchmark(), "benchmarks/loose.yaml");
-    expect(() => loadBenchmarks(registry, root)).toThrow(/must be benchmarks\//);
+  it("rejects a record that fails the schema", () => {
+    write(benchmark({ commit: "abc" }));
+    expect(() => loadBenchmarks(registry, root)).toThrow(/results\.json is invalid/);
   });
 
   it("rejects a model the registry does not list", () => {
@@ -121,54 +143,86 @@ describe("loadBenchmarks", () => {
   });
 });
 
-describe("skillOf", () => {
-  it("derives skill only when the baseline is stored", () => {
-    expect(skillOf(benchmark({ metrics: { crps: 0.5, baseline_crps: 1.0 } }))).toBe(0.5);
-    expect(skillOf(benchmark())).toBeNull();
-  });
-});
-
 describe("buildBenchmarkSuites", () => {
   it("is empty while the store is empty", () => {
-    expect(buildBenchmarkSuites(registry, [])).toEqual([]);
+    expect(buildBenchmarkSuites(registry, [], METRICS)).toEqual([]);
   });
 
   it("builds one suite per dataset: measured rows, then every other pin as not run", () => {
-    const suites = buildBenchmarkSuites(registry, [smokeRun()]);
+    const suites = buildBenchmarkSuites(registry, [smokeRun()], METRICS);
     expect(suites).toHaveLength(1);
     const suite = suites[0];
 
-    expect(suite.heading).toBe("Laos admin-1 monthly · horizon 3");
-    expect(suite.countLine).toBe("1 of 6 listed models evaluated");
-    expect(suite.runContext).toContainEqual({
-      k: "Suite",
-      v: "chapkit_simple_multistep_model.monthly_climate",
-    });
+    expect(suite.heading).toBe("Vietnam monthly · horizon 3");
+    expect(suite.countLine).toBe("1 of 5 configured models evaluated");
+    // Columns are the metrics the suite's runs record, in chap-core's default order.
+    expect(suite.columns.map((c) => c.id)).toEqual(["mae", "rmse", "crps", "crps_norm"]);
     expect(suite.runContext).toContainEqual({ k: "Observations", v: "2,808 rows" });
-    expect(suite.pendingNote).toMatch(/^Five listed models/);
+    // The dataset links to the files the benchmarking server seeds it from.
+    expect(suite.runContext).toContainEqual({
+      k: "Dataset",
+      v: "Vietnam monthly",
+      href: "https://github.com/dhis2/climate-health-data/tree/af362d5260c6/vnm",
+    });
+    expect(suite.pendingNote).toMatch(/^Four configured models/);
 
-    expect(suite.rows).toHaveLength(registry.models.length);
+    // Starters are scaffolding, never listed as a model awaiting a run.
+    // One row per configured model of every listed (non-starter) model.
+    expect(suite.rows).toHaveLength(
+      registry.models
+        .filter((m) => m.kind !== "starter")
+        .reduce((n, m) => n + Math.max(1, Object.keys(m.configurations).length), 0),
+    );
+    expect(suite.rows.map((r) => r.pinLine.split(" · ")[0])).toContain(
+      "monthly_selfhistory",
+    );
     const [first, ...rest] = suite.rows;
     expect(first.measured).toBe(true);
     expect(first.pinLine).toBe(
-      `chapkit_simple_multistep_model@${shortCommit(multistepStable.commit)} · ${multistepStable.version}`,
+      `monthly_climate · chapkit_simple_multistep_model@${shortCommit(multistepStable.commit)}`,
     );
+    expect(first.isStable).toBe(true);
     expect(first.suiteLine).toBe(
       `chapkit_simple_multistep_model.monthly_climate · ${multistepStable.commit.slice(0, 12)}…`,
     );
+    // The run record carries every metric, named and described by chap-core.
+    expect(first.metrics.map((m) => m.label)).toEqual([
+      "MAE",
+      "RMSE",
+      "CRPS",
+      "CRPS Normalized",
+    ]);
+    expect(first.metrics[0]).toEqual({
+      id: "mae",
+      label: "MAE",
+      value: "57.04",
+      description: "MAE description",
+    });
     for (const row of rest) {
       expect(row.measured).toBe(false);
-      expect(row.ncrps).toBeNull();
-      expect(row.crps).toBeNull();
+      expect(row.metrics).toEqual([]);
+      expect(row.values).toEqual({});
     }
   });
 
-  it("reuses the suite's run parameters in an unmeasured row's command", () => {
-    const suite = buildBenchmarkSuites(registry, [smokeRun()])[0];
-    const pendingGhr = suite.rows.find((r) => r.modelId === ghr.id)!;
-    expect(pendingGhr.cmd).toBe(
-      `chap eval --model chapkit_ghr_model \\\n  --commit ${shortCommit(ghrStable.commit)} --dataset laos-admin1-monthly \\\n  --horizon 3 --splits 1 --samples 200`,
-    );
+  it("shows the stable pin's run per configuration, else the newest version's", () => {
+    const older = multistep.versions.find((v) => v.version !== multistepStable.version)!;
+    const olderRun = (configuration: string) =>
+      smokeRun({
+        version: older.version,
+        commit: older.commit,
+        run: { ...smokeRun().run!, configuration },
+      });
+    const rows = buildBenchmarkSuites(registry, [
+      olderRun("monthly_climate"),
+      smokeRun(),
+      olderRun("monthly_selfhistory"),
+    ], METRICS)[0].rows.filter((r) => r.modelId === multistep.id);
+
+    expect(rows.map((r) => [r.pinLine.split(" · ")[0], r.versionTag, r.isStable])).toEqual([
+      ["monthly_climate", multistepStable.version, true],
+      ["monthly_selfhistory", older.version, false],
+    ]);
   });
 
   it("ranks measured rows by normalised CRPS ascending", () => {
@@ -181,15 +235,85 @@ describe("buildBenchmarkSuites", () => {
         version: arimaStable.version,
         commit: arimaStable.commit,
         run: undefined,
-        metrics: { crps: 39.2, norm_crps: 0.041 },
-        resources: undefined,
+        metrics: { crps: 39.2, crps_norm: 0.041 },
       }),
-    ])[0];
+    ], METRICS)[0];
     expect(suite.rows.slice(0, 2).map((r) => r.modelId)).toEqual([
       "auto_arima_chapkit",
       "chapkit_simple_multistep_model",
     ]);
-    expect(suite.countLine).toBe("2 of 6 listed models evaluated");
-    expect(suite.pendingNote).toMatch(/^Four listed models/);
+    expect(suite.countLine).toBe("2 of 5 configured models evaluated");
+    expect(suite.pendingNote).toMatch(/^Three configured models/);
+  });
+});
+
+describe("metricRankKey", () => {
+  const column = (overrides: Partial<MetricColumn>): MetricColumn => ({
+    id: "m",
+    label: "M",
+    description: "",
+    target: null,
+    targetBehavior: "closest",
+    optimizationDirection: "minimize",
+    ...overrides,
+  });
+
+  it("ranks lower first when minimised and higher first when maximised", () => {
+    expect(metricRankKey(column({}), 3)).toBeLessThan(metricRankKey(column({}), 4));
+    const max = column({ optimizationDirection: "maximize" });
+    expect(metricRankKey(max, 4)).toBeLessThan(metricRankKey(max, 3));
+  });
+
+  it("ranks by distance to a target, either side", () => {
+    const ratio = column({ target: 0.5, optimizationDirection: null });
+    expect(metricRankKey(ratio, 0.45)).toBeCloseTo(0.05);
+    expect(metricRankKey(ratio, 0.6)).toBeCloseTo(0.1);
+  });
+
+  it("ranks only the shortfall below an at-least target", () => {
+    const coverage = column({ target: 0.8, targetBehavior: "at_least", optimizationDirection: null });
+    expect(metricRankKey(coverage, 0.9)).toBe(0);
+    expect(metricRankKey(coverage, 0.6)).toBeCloseTo(0.2);
+  });
+});
+
+describe("inMetricOrder", () => {
+  it("follows chap-core's default order, appending metrics it does not name", () => {
+    const ids = ["crps", "newcomer", "mae", "crps_log1p", "later"];
+    expect(inMetricOrder(ids.map((id) => ({ id }))).map((m) => m.id)).toEqual([
+      "crps_log1p",
+      "mae",
+      "crps",
+      "newcomer",
+      "later",
+    ]);
+  });
+});
+
+describe("model page versions table", () => {
+  it("lists every version's run, newest first, marking each column's best", () => {
+    const older = multistep.versions.find((v) => v.version !== multistepStable.version)!;
+    const view = toDetailView(
+      multistep,
+      registry,
+      [
+        smokeRun({
+          version: older.version,
+          commit: older.commit,
+          metrics: { crps: 40, mae: 50, rmse: 200, crps_norm: 0.04 },
+        }),
+        smokeRun(),
+      ],
+      METRICS,
+      { fetchedAt: null, proposals: [] },
+    );
+    const [table] = view.benchmarks!.byVersion;
+
+    // Only chap-core's default metrics, in its order.
+    expect(table.columns.map((c) => c.id)).toEqual(["mae", "rmse"]);
+    expect(table.rows.map((r) => [r.versionTag, r.isStable, r.best])).toEqual([
+      [multistepStable.version, true, [false, true]],
+      [older.version, false, [true, false]],
+    ]);
   });
 });

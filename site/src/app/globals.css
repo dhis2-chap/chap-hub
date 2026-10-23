@@ -273,6 +273,40 @@ body {
     color: #f4fbf4;
   }
 
+  /* @dhis2-ui/tooltip, CSS-only: shown on hover and keyboard focus after
+     its 200ms open delay. It opens to the side, where a scrolling table
+     wrapper does not clip it. */
+  .d2-tooltip-anchor {
+    position: relative;
+    cursor: help;
+  }
+  .d2-tooltip {
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 4px);
+    z-index: 10;
+    max-width: 300px;
+    padding: 4px 6px;
+    border-radius: 3px;
+    background-color: #212934;
+    color: #ffffff;
+    font-family: var(--font-body);
+    font-size: 13px;
+    line-height: 17px;
+    white-space: nowrap;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-50%);
+    transition: visibility 0s linear 0s, opacity 0s linear 0s;
+  }
+  .d2-tooltip-anchor:hover .d2-tooltip,
+  .d2-tooltip-anchor:focus-visible .d2-tooltip {
+    visibility: visible;
+    opacity: 1;
+    transition-delay: 200ms;
+  }
+
   /* @dhis2-ui/segmented-control */
   .d2-segmented {
     display: inline-flex;
@@ -404,5 +438,233 @@ body {
   .d2-notice-warning {
     border-color: #ffe082;
     background: #fff8e1;
+  }
+
+  /* @dhis2-ui/checkbox — regular. The native input stays on top of the
+     icon, invisible, so it keeps focus and keyboard handling. */
+  .d2-checkbox {
+    display: flex;
+    position: relative;
+    align-items: center;
+    color: #212934;
+    font-size: 14px;
+    line-height: 19px;
+    cursor: pointer;
+  }
+  .d2-checkbox input {
+    position: absolute;
+    inset-inline-start: 3px;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .d2-checkbox-icon {
+    flex-shrink: 0;
+    margin-inline-end: 4px;
+    padding: 1px;
+    border: 2px solid transparent;
+    border-radius: 5px;
+    user-select: none;
+  }
+  .d2-checkbox-icon svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+    pointer-events: none;
+  }
+  .d2-checkbox-icon .border {
+    fill: #404b5a;
+  }
+  .d2-checkbox-icon .background {
+    fill: #ffffff;
+  }
+  .d2-checkbox-icon .checkmark {
+    fill: none;
+  }
+  .d2-checkbox input:checked + .d2-checkbox-icon .background {
+    fill: #00897b;
+  }
+  .d2-checkbox input:checked + .d2-checkbox-icon .border {
+    fill: #00332b;
+  }
+  .d2-checkbox input:checked + .d2-checkbox-icon .checkmark {
+    fill: #ffffff;
+  }
+  .d2-checkbox input:focus-visible + .d2-checkbox-icon {
+    outline: 3px solid var(--mp-focus);
+    outline-offset: -3px;
+  }
+
+  /* @dhis2-ui/menu — FlyoutMenu, MenuSectionHeader, MenuItem */
+  .d2-flyout {
+    min-width: 180px;
+    padding: 4px 0;
+    border-radius: 3px;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(12, 14, 16, 0.15),
+      0 0 0 1px rgba(12, 14, 16, 0.05); /* elevations.popover */
+    overflow: auto;
+  }
+  .d2-menu-header {
+    margin: 0;
+    padding: 8px 16px;
+    color: #4a5768;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  .d2-menu-item {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 16px;
+    background-color: #ffffff;
+    color: #212934;
+    font-size: 14px;
+    line-height: 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .d2-menu-item:hover {
+    background-color: #f3f5f7;
+  }
+  .d2-menu-item:active {
+    background-color: #e8edf2;
+  }
+
+  /* @dhis2-ui/modal on @dhis2-ui/layer (translucent) and card, drawn on a
+     native <dialog>. */
+  .d2-modal {
+    width: 600px;
+    max-width: calc(100vw - 128px);
+    max-height: calc(100vh - 128px);
+    margin: 64px auto auto;
+    padding: 24px;
+    border: 0;
+    border-radius: 3px;
+    background: #ffffff;
+    box-shadow: var(--mp-shadow);
+    color: #212934;
+  }
+  .d2-modal[open] {
+    display: flex;
+    flex-flow: column;
+  }
+  .d2-modal-large {
+    width: 800px;
+  }
+  .d2-modal::backdrop {
+    background-color: rgba(33, 43, 54, 0.4);
+  }
+  @media (max-width: 640px) {
+    .d2-modal {
+      max-width: calc(100vw - 32px);
+      max-height: calc(100dvh - 32px);
+      margin-top: 16px;
+    }
+  }
+  .d2-modal-title {
+    order: 1;
+    margin: 0 0 12px;
+    color: #212934;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+  .d2-modal-content {
+    order: 2;
+    flex-grow: 2;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .d2-modal-actions {
+    order: 3;
+    display: flex;
+    justify-content: flex-end;
+    margin: 16px 0 0;
+  }
+  .d2-modal-close {
+    position: absolute;
+    top: 0;
+    inset-inline-end: 0;
+    padding: 4px 4px 0;
+    border: none;
+    border-radius: 3px;
+    background-color: transparent;
+    color: #4a5768;
+    fill: currentColor;
+    cursor: pointer;
+  }
+  .d2-modal-close:hover {
+    background-color: #f3f5f7;
+    color: #212934;
+  }
+  .d2-modal-close:active {
+    background-color: #e8edf2;
+  }
+
+  /* @dhis2-ui/table — DataTable, DataTableColumnHeader, Sorter */
+  .d2-table {
+    width: 100%;
+    border: 1px solid #e8edf2;
+    border-collapse: separate;
+    border-spacing: 0;
+    box-sizing: border-box;
+  }
+  .d2-table th {
+    padding: 6px 12px;
+    border-bottom: 1px solid #e8edf2;
+    background-color: #f3f5f7;
+    color: #404b5a;
+    font-size: 13px;
+    font-weight: normal;
+    vertical-align: top;
+  }
+  .d2-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #e8edf2;
+    background-color: #ffffff;
+    color: #212934;
+    font-size: 14px;
+  }
+  .d2-table tbody tr:last-child td {
+    border-bottom-color: transparent;
+  }
+  .d2-table tbody tr:hover td {
+    background-color: #f8f9fa;
+  }
+  .d2-table tbody tr:active td {
+    background-color: #f3f5f7;
+  }
+  .d2-table-head {
+    display: flex;
+    align-items: center;
+    min-height: 24px;
+  }
+  .d2-table-sorter {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-inline-start: 2px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .d2-table-sorter:hover {
+    background: #d5dde5;
+  }
+  .d2-table-sorter polygon {
+    fill: #a0adba;
+  }
+  .d2-table-sorter[data-direction="asc"] .top,
+  .d2-table-sorter[data-direction="desc"] .bottom {
+    fill: #1565c0;
   }
 }

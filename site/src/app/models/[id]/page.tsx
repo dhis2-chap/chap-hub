@@ -5,7 +5,7 @@ import { KindBadge } from "@/components/badges";
 import { AuthorPanel } from "@/components/author";
 import { GitHubMark } from "@/components/icons";
 import { ModelDetailTabs } from "@/components/ModelDetailTabs";
-import { getBenchmarks } from "@/lib/benchmarks";
+import { getBenchmarks, getMetricDefinitions } from "@/lib/benchmarks";
 import { getProposals } from "@/lib/proposals";
 import { getModel, getRegistry } from "@/lib/registry";
 import { toDetailView } from "@/lib/views";
@@ -36,7 +36,13 @@ export default async function ModelPage({
   if (!model) notFound();
   const registry = getRegistry();
   const proposals = await getProposals(registry);
-  const view = toDetailView(model, registry, getBenchmarks(), proposals);
+  const view = toDetailView(
+    model,
+    registry,
+    getBenchmarks(),
+    getMetricDefinitions(),
+    proposals,
+  );
 
   const header = (
     <>
