@@ -13,6 +13,7 @@ import {
   type MetricColumn,
 } from "./metrics";
 import { loadRegistry, shortCommit, stableVersion } from "./registry";
+import { toDetailView } from "./views";
 import type { Benchmark, MetricInfo } from "./schema";
 
 const registry = loadRegistry();
@@ -157,6 +158,12 @@ describe("buildBenchmarkSuites", () => {
     // Columns are the metrics the suite's runs record, in chap-core's default order.
     expect(suite.columns.map((c) => c.id)).toEqual(["mae", "rmse", "crps", "crps_norm"]);
     expect(suite.runContext).toContainEqual({ k: "Observations", v: "2,808 rows" });
+    // The dataset links to the files the benchmarking server seeds it from.
+    expect(suite.runContext).toContainEqual({
+      k: "Dataset",
+      v: "Vietnam monthly",
+      href: "https://github.com/dhis2/climate-health-data/tree/af362d5260c6/vnm",
+    });
     expect(suite.pendingNote).toMatch(/^Three listed models/);
 
     // Starters are scaffolding, never listed as a model awaiting a run.
@@ -166,8 +173,9 @@ describe("buildBenchmarkSuites", () => {
     const [first, ...rest] = suite.rows;
     expect(first.measured).toBe(true);
     expect(first.pinLine).toBe(
-      `monthly_climate · chapkit_simple_multistep_model@${shortCommit(multistepStable.commit)} · ${multistepStable.version}`,
+      `monthly_climate · chapkit_simple_multistep_model@${shortCommit(multistepStable.commit)}`,
     );
+    expect(first.isStable).toBe(true);
     expect(first.suiteLine).toBe(
       `chapkit_simple_multistep_model.monthly_climate · ${multistepStable.commit.slice(0, 12)}…`,
     );
@@ -189,6 +197,26 @@ describe("buildBenchmarkSuites", () => {
       expect(row.metrics).toEqual([]);
       expect(row.values).toEqual({});
     }
+  });
+
+  it("shows the stable pin's run per configuration, else the newest version's", () => {
+    const older = multistep.versions.find((v) => v.version !== multistepStable.version)!;
+    const olderRun = (configuration: string) =>
+      smokeRun({
+        version: older.version,
+        commit: older.commit,
+        run: { ...smokeRun().run!, configuration },
+      });
+    const rows = buildBenchmarkSuites(registry, [
+      olderRun("monthly_climate"),
+      smokeRun(),
+      olderRun("monthly_selfhistory"),
+    ], METRICS)[0].rows.filter((r) => r.modelId === multistep.id);
+
+    expect(rows.map((r) => [r.pinLine.split(" · ")[0], r.versionTag, r.isStable])).toEqual([
+      ["monthly_climate", multistepStable.version, true],
+      ["monthly_selfhistory", older.version, false],
+    ]);
   });
 
   it("ranks measured rows by normalised CRPS ascending", () => {
@@ -252,6 +280,34 @@ describe("inMetricOrder", () => {
       "crps",
       "newcomer",
       "later",
+    ]);
+  });
+});
+
+describe("model page versions table", () => {
+  it("lists every version's run, newest first, marking each column's best", () => {
+    const older = multistep.versions.find((v) => v.version !== multistepStable.version)!;
+    const view = toDetailView(
+      multistep,
+      registry,
+      [
+        smokeRun({
+          version: older.version,
+          commit: older.commit,
+          metrics: { crps: 40, mae: 50, rmse: 200, crps_norm: 0.04 },
+        }),
+        smokeRun(),
+      ],
+      METRICS,
+      { fetchedAt: null, proposals: [] },
+    );
+    const [table] = view.benchmarks!.byVersion;
+
+    // Only chap-core's default metrics, in its order.
+    expect(table.columns.map((c) => c.id)).toEqual(["mae", "rmse"]);
+    expect(table.rows.map((r) => [r.versionTag, r.isStable, r.best])).toEqual([
+      [multistepStable.version, true, [false, true]],
+      [older.version, false, [true, false]],
     ]);
   });
 });

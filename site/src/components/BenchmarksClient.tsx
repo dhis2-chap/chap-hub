@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  IconArrowLeft16,
+  IconArrowRight16,
+  IconChevronDown16,
+  IconCross16,
+} from "@dhis2/ui-icons";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { BenchmarkRowView, BenchmarkSuiteView } from "@/lib/benchmarks";
@@ -40,12 +46,54 @@ function writePicks(ids: string[]) {
   }
 }
 
-const HEAD_TYPE =
-  "overflow-hidden text-ellipsis whitespace-nowrap font-brand text-[10px] font-medium uppercase tracking-[0.09em]";
-const HEAD = `${HEAD_TYPE} text-ink-3`;
-
 function valueOf(row: BenchmarkRowView, id: string): string {
   return row.metrics.find((m) => m.id === id)?.value ?? "—";
+}
+
+/** The @dhis2-ui/checkbox regular icon. */
+function CheckboxIcon() {
+  return (
+    <span className="d2-checkbox-icon" aria-hidden>
+      <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+        <rect className="background" x="0" y="0" width="18" height="18" rx="3" />
+        <path
+          className="border"
+          d="M15,0 C16.6568542,0 18,1.34314575 18,3 L18,15 C18,16.6568542 16.6568542,18 15,18 L3,18 C1.34314575,18 0,16.6568542 0,15 L0,3 C0,1.34314575 1.34314575,0 3,0 L15,0 Z M15,1 L3,1 C1.9456382,1 1.08183488,1.81587779 1.00548574,2.85073766 L1,3 L1,15 C1,16.0543618 1.81587779,16.9181651 2.85073766,16.9945143 L3,17 L15,17 C16.0543618,17 16.9181651,16.1841222 16.9945143,15.1492623 L17,15 L17,3 C17,1.9456382 16.1841222,1.08183488 15.1492623,1.00548574 L15,1 Z"
+        />
+        <path
+          className="checkmark"
+          d="M4.74451387,8.02852516 C4.39595738,8.11985643 4.12375034,8.39235188 4.03251575,8.74127768 C3.94128115,9.09020348 4.04521722,9.46125864 4.30437605,9.71182782 L7.29823844,12.7078028 C7.68753993,13.0973991 8.31859767,13.0973991 8.70789916,12.7078028 L13.695624,6.71585285 C13.9547828,6.46528367 14.0587189,6.09422851 13.9674843,5.74530271 C13.8762497,5.39637691 13.6040426,5.12388146 13.2554861,5.0325502 C12.9069296,4.94121893 12.5362672,5.04526513 12.2859632,5.30469855 L8.0030688,10.5910713 L5.71403676,8.30067351 C5.46373279,8.0412401 5.09307036,7.9371939 4.74451387,8.02852516 Z"
+        />
+      </svg>
+    </span>
+  );
+}
+
+/** The @dhis2-ui/table Sorter: `asc` lights the column ranked by. */
+function Sorter({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="d2-table-sorter"
+      data-direction={active ? "asc" : "default"}
+      title={`Rank by ${label}`}
+      aria-label={`Rank by ${label}`}
+      onClick={onClick}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+        <polygon className="top" points="4 9 12 9 8 14" />
+        <polygon className="bottom" points="4 7 12 7 8 2" />
+      </svg>
+    </button>
+  );
 }
 
 function MetricPicker({
@@ -88,30 +136,29 @@ function MetricPicker({
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        className="d2-button d2-button-small"
+        className="d2-button"
         aria-expanded={open}
         aria-haspopup="true"
         onClick={() => setOpen((o) => !o)}
       >
-        Metrics ({selected.length} of {columns.length}) ▾
+        Metrics ({selected.length} of {columns.length})
+        <IconChevronDown16 />
       </button>
       {open ? (
-        <div className="absolute right-0 z-20 mt-1 w-[min(340px,calc(100vw-32px))] rounded-[3px] border border-line bg-surface py-2 shadow-lift">
-          <div className="flex items-center justify-between gap-3 px-4 pb-2">
-            <span className="font-brand text-[10px] font-medium uppercase tracking-[0.09em] text-ink-3">
-              Shown metrics
-            </span>
-            <span className="flex gap-3 text-[12px]">
+        <div className="d2-flyout absolute right-0 z-20 mt-1 max-h-[480px] w-[min(360px,calc(100vw-32px))]">
+          <div className="flex items-center justify-between gap-3 pr-3">
+            <h6 className="d2-menu-header">Shown metrics</h6>
+            <span className="flex gap-2">
               <button
                 type="button"
-                className="cursor-pointer border-0 bg-transparent p-0 text-brand hover:underline"
+                className="d2-button d2-button-small d2-button-secondary"
                 onClick={() => onChange(columns.map((c) => c.id))}
               >
                 All
               </button>
               <button
                 type="button"
-                className="cursor-pointer border-0 bg-transparent p-0 text-brand hover:underline"
+                className="d2-button d2-button-small d2-button-secondary"
                 onClick={() =>
                   onChange(
                     DEFAULT_METRIC_COLUMNS.filter((id) =>
@@ -124,20 +171,20 @@ function MetricPicker({
               </button>
             </span>
           </div>
-          <ul className="max-h-[360px] overflow-y-auto">
+          <ul className="m-0 list-none p-0">
             {columns.map((c) => (
               <li key={c.id}>
-                <label className="flex cursor-pointer items-start gap-2.5 px-4 py-1.5 hover:bg-surface-2">
+                <label className="d2-menu-item d2-checkbox items-start py-2.5">
                   <input
                     type="checkbox"
-                    className="mt-[3px] accent-brand"
                     checked={selected.includes(c.id)}
                     onChange={() => toggle(c.id)}
                   />
-                  <span className="min-w-0">
-                    <span className="block text-[13px] text-ink">{c.label}</span>
+                  <CheckboxIcon />
+                  <span className="ml-1 min-w-0">
+                    <span className="block">{c.label}</span>
                     {c.description ? (
-                      <span className="block text-[11.5px] leading-[1.4] text-ink-3">
+                      <span className="mt-0.5 block text-[13px] leading-[1.4] text-ink-2">
                         {c.description}
                       </span>
                     ) : null}
@@ -163,9 +210,7 @@ function Figure({
 }) {
   return (
     <div className="min-w-0 bg-surface px-4 py-3">
-      <div className="truncate font-brand text-[10px] font-medium uppercase tracking-[0.09em] text-ink-3">
-        {label}
-      </div>
+      <div className="truncate text-[13px] text-ink-2">{label}</div>
       <div
         className={`mt-1 truncate font-mono ${
           strong ? "text-[18px] font-medium text-ink" : "text-[16px] text-ink-2"
@@ -208,7 +253,7 @@ function RunRecord({
 
       {rest.length > 0 ? (
         <section>
-          <h3 className="mb-2 font-brand text-[13px] font-medium text-ink">
+          <h3 className="mb-2 text-[14px] font-medium text-ink">
             {headline.length > 0 ? "Other recorded metrics" : "All recorded metrics"}
           </h3>
           <dl className="grid gap-x-8 sm:grid-cols-2">
@@ -217,12 +262,12 @@ function RunRecord({
                 key={m.id}
                 className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 border-t border-line py-2.5"
               >
-                <dt className="text-[13px] text-ink">{m.label}</dt>
+                <dt className="text-[14px] text-ink">{m.label}</dt>
                 <dd className="text-right font-mono text-[13px] text-ink">
                   {m.value}
                 </dd>
                 {m.description ? (
-                  <dd className="col-span-2 mt-0.5 text-[11.5px] leading-[1.45] text-ink-3">
+                  <dd className="col-span-2 mt-0.5 text-[13px] leading-[1.45] text-ink-2">
                     {m.description}
                   </dd>
                 ) : null}
@@ -252,6 +297,7 @@ function RunRecordModal({
 }) {
   const row = rows[index];
   if (!row) return <dialog ref={dialogRef} />;
+  const close = () => dialogRef.current?.close();
   return (
     <dialog
       ref={dialogRef}
@@ -265,58 +311,64 @@ function RunRecordModal({
         if (e.key === "ArrowRight" && index < rows.length - 1)
           onStep(index + 1);
       }}
-      className="m-auto max-h-[calc(100dvh-48px)] w-[calc(100vw-32px)] max-w-[800px] overflow-hidden rounded-[3px] border-0 bg-surface p-0 text-ink shadow-lift backdrop:bg-[rgba(33,41,52,0.6)] open:flex open:flex-col"
+      className="d2-modal d2-modal-large"
     >
-      <header className="flex items-start justify-between gap-4 border-b border-line px-6 pb-4 pt-5">
-        <div className="min-w-0">
-          <div className="font-brand text-[10px] font-medium uppercase tracking-[0.1em] text-ink-3">
-            {suite.heading} · {row.measured ? `rank ${index + 1}` : "no run"}
-          </div>
-          <h2
-            id="run-record-title"
-            className="mt-1.5 font-brand text-[20px] font-medium leading-tight text-ink"
-          >
+      <button
+        type="button"
+        className="d2-modal-close"
+        aria-label="Close"
+        onClick={close}
+      >
+        <IconCross16 />
+      </button>
+
+      <header className="order-1 mb-3 min-w-0 pr-6">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 id="run-record-title" className="d2-modal-title order-none m-0">
             {row.name}
-          </h2>
-          <div className="mt-1 truncate font-mono text-[12px] text-ink-3">
-            {row.pinLine}
-          </div>
+          </h1>
+          <span
+            className={`d2-tag ${
+              row.measured ? "d2-tag-positive" : "d2-tag-neutral"
+            }`}
+          >
+            {row.measured ? "Successful run" : "Not run"}
+          </span>
         </div>
-        <span
-          className={`d2-tag shrink-0 ${
-            row.measured ? "d2-tag-positive" : "d2-tag-neutral"
-          }`}
-        >
-          {row.measured ? "Successful run" : "Not run"}
-        </span>
+        <div className="mt-1 text-[13px] text-ink-2">
+          {suite.heading} · {row.measured ? `rank ${index + 1}` : "no run"}
+        </div>
+        <div className="mt-0.5 truncate font-mono text-[12px] text-ink-3">
+          {row.pinLine} · {row.versionTag}
+        </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+      <div className="d2-modal-content">
         <RunRecord row={row} shown={shown} />
       </div>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line bg-surface-2 px-6 py-3">
+      <div className="d2-modal-actions flex-wrap justify-between gap-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="d2-button d2-button-small"
+            className="d2-button d2-button-secondary"
             disabled={index === 0}
             onClick={() => onStep(index - 1)}
             aria-label="Previous row"
           >
-            ←
+            <IconArrowLeft16 />
           </button>
-          <span className="font-mono text-[12px] text-ink-3">
-            {index + 1} / {rows.length}
+          <span className="text-[14px] text-ink-2">
+            {index + 1} of {rows.length}
           </span>
           <button
             type="button"
-            className="d2-button d2-button-small"
+            className="d2-button d2-button-secondary"
             disabled={index === rows.length - 1}
             onClick={() => onStep(index + 1)}
             aria-label="Next row"
           >
-            →
+            <IconArrowRight16 />
           </button>
         </div>
         <div className="flex items-center gap-2">
@@ -327,12 +379,12 @@ function RunRecordModal({
             type="button"
             className="d2-button d2-button-primary"
             data-autofocus
-            onClick={() => dialogRef.current?.close()}
+            onClick={close}
           >
             Close
           </button>
         </div>
-      </footer>
+      </div>
     </dialog>
   );
 }
@@ -344,7 +396,7 @@ function SuiteTable({
   suite: BenchmarkSuiteView;
   shown: string[];
 }) {
-  // Ranked by the first shown metric until a column is clicked.
+  // Ranked by the first shown metric until another column's sorter is used.
   const [sortPick, setSortPick] = useState<string | null>(null);
   const [openIndex, setOpenIndex] = useState(0);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -361,109 +413,149 @@ function SuiteTable({
   const rows = (
     sortColumn ? [...measured].sort((a, b) => rankOf(a) - rankOf(b)) : measured
   ).concat(suite.rows.filter((r) => !r.measured));
-  const grid = {
-    gridTemplateColumns: `36px minmax(200px,1.9fr) repeat(${columns.length}, minmax(96px,1fr)) 100px`,
+
+  const openRow = (i: number) => {
+    setOpenIndex(i);
+    dialogRef.current?.showModal();
+    // showModal focuses the first enabled control (the close cross);
+    // start on Close instead.
+    dialogRef.current
+      ?.querySelector<HTMLElement>("[data-autofocus]")
+      ?.focus();
   };
 
   return (
     <>
-      <div className="mb-3.5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <dl className="flex flex-wrap gap-x-5 gap-y-1">
           {suite.runContext.map((c) => (
             <div key={c.k} className="flex items-baseline gap-1.5">
-              <dt className="text-[12px] text-ink-3">{c.k}</dt>
-              <dd className="font-mono text-[12px] text-ink">{c.v}</dd>
+              <dt className="text-[13px] text-ink-2">{c.k}</dt>
+              <dd className="font-mono text-[13px] text-ink">
+                {c.href ? (
+                  <a
+                    href={c.href}
+                    className="font-medium text-brand hover:underline"
+                  >
+                    {c.v}
+                  </a>
+                ) : (
+                  c.v
+                )}
+              </dd>
             </div>
           ))}
         </dl>
-        <span className="whitespace-nowrap font-mono text-[11.5px] text-ink-3">
+        <span className="whitespace-nowrap text-[13px] text-ink-2">
           {suite.countLine}
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded-[3px] border border-line bg-surface">
-        <div style={{ minWidth: 400 + columns.length * 108 }}>
-          <div
-            style={grid}
-            className="grid gap-3 border-b border-line bg-surface-2 px-5 py-[11px]"
-          >
-            <span className={HEAD}>#</span>
-            <span className={HEAD}>Model · pin</span>
-            {columns.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                title={c.description}
-                onClick={() => setSortPick(c.id)}
-                className={`${HEAD_TYPE} cursor-pointer border-0 bg-transparent p-0 text-right ${
-                  sortColumn?.id === c.id ? "text-brand" : "text-ink-3"
-                }`}
-              >
-                {c.label}
-                {sortColumn?.id === c.id ? " ↑" : ""}
-              </button>
-            ))}
-            <span className={HEAD}>Status</span>
-          </div>
-          {rows.map((row, i) => (
-            <button
-              key={row.id}
-              type="button"
-              onClick={() => {
-                setOpenIndex(i);
-                dialogRef.current?.showModal();
-                // showModal focuses the first enabled control (an arrow);
-                // start on Close instead.
-                dialogRef.current
-                  ?.querySelector<HTMLElement>("[data-autofocus]")
-                  ?.focus();
-              }}
-              style={grid}
-              className={`grid w-full cursor-pointer items-center gap-3 border-b border-l-[3px] border-b-line border-l-transparent py-[13px] pl-[17px] pr-5 text-left last:border-b-0 hover:border-l-brand hover:bg-surface-2 ${
-                row.measured ? "" : "opacity-[0.62]"
-              }`}
-            >
-              <span className="font-mono text-[13px] text-ink-3">
-                {row.measured ? i + 1 : "—"}
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate font-brand text-[13.5px] font-medium text-ink">
-                  {row.name}
-                </span>
-                <span className="mt-[3px] block truncate font-mono text-[11px] text-ink-3">
-                  {row.pinLine}
-                </span>
-              </span>
+      <div className="overflow-x-auto">
+        <table
+          className="d2-table"
+          style={{ minWidth: 400 + columns.length * 120 }}
+        >
+          <thead>
+            <tr>
+              <th className="w-12 text-left" scope="col">
+                <span className="d2-table-head">#</span>
+              </th>
+              <th className="text-left" scope="col">
+                <span className="d2-table-head">Model · pin</span>
+              </th>
+              <th className="text-left" scope="col">
+                <span className="d2-table-head">Version</span>
+              </th>
               {columns.map((c) => (
-                <span
+                <th
                   key={c.id}
-                  className={`text-right font-mono ${
-                    sortColumn?.id === c.id
-                      ? "text-[13.5px] text-ink"
-                      : "text-[13px] text-ink-2"
-                  }`}
+                  scope="col"
+                  title={c.description}
+                  aria-sort={sortColumn?.id === c.id ? "ascending" : undefined}
                 >
-                  {valueOf(row, c.id)}
-                </span>
+                  <span className="d2-table-head justify-end">
+                    {c.label}
+                    <Sorter
+                      active={sortColumn?.id === c.id}
+                      label={c.label}
+                      onClick={() => setSortPick(c.id)}
+                    />
+                  </span>
+                </th>
               ))}
-              <span
-                className={`justify-self-start whitespace-nowrap rounded-[3px] border px-1.5 py-0.5 font-mono text-[10.5px] ${
-                  row.measured
-                    ? "border-verified bg-verified-tint text-verified"
-                    : "border-line-strong text-ink-3"
-                }`}
+              <th className="text-left" scope="col">
+                <span className="d2-table-head">Status</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr
+                key={row.id}
+                onClick={() => openRow(i)}
+                className={`cursor-pointer ${row.measured ? "" : "opacity-[0.62]"}`}
               >
-                {row.measured ? "Successful" : "Not run"}
-              </span>
-            </button>
-          ))}
-          {suite.pendingNote ? (
-            <div className="border-t border-line bg-surface-2 px-5 py-3 text-[12.5px] text-ink-2">
-              {suite.pendingNote}
-            </div>
-          ) : null}
-        </div>
+                <td className="font-mono text-ink-2">
+                  {row.measured ? i + 1 : "—"}
+                </td>
+                <td className="max-w-0 min-w-[220px]">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openRow(i);
+                    }}
+                    className="block max-w-full cursor-pointer truncate border-0 bg-transparent p-0 text-left text-[14px] font-medium text-ink hover:underline"
+                  >
+                    {row.name}
+                  </button>
+                  <span className="mt-0.5 block truncate font-mono text-[12px] text-ink-3">
+                    {row.pinLine}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap font-mono text-[13px] text-ink-2">
+                  {row.isStable ? (
+                    <span
+                      tabIndex={0}
+                      className="d2-tooltip-anchor underline decoration-dotted underline-offset-2"
+                    >
+                      stable
+                      <span role="tooltip" className="d2-tooltip">
+                        Stable · {row.versionTag}
+                      </span>
+                    </span>
+                  ) : (
+                    row.versionTag
+                  )}
+                </td>
+                {columns.map((c) => (
+                  <td
+                    key={c.id}
+                    className={`text-right font-mono ${
+                      sortColumn?.id === c.id ? "text-ink" : "text-ink-2"
+                    }`}
+                  >
+                    {valueOf(row, c.id)}
+                  </td>
+                ))}
+                <td>
+                  <span
+                    className={`d2-tag ${
+                      row.measured ? "d2-tag-positive" : "d2-tag-neutral"
+                    }`}
+                  >
+                    {row.measured ? "Successful" : "Not run"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+      {suite.pendingNote ? (
+        <p className="mt-2 text-[13px] text-ink-2">{suite.pendingNote}</p>
+      ) : null}
 
       <RunRecordModal
         dialogRef={dialogRef}
@@ -499,9 +591,9 @@ export function BenchmarkSuites({ suites }: { suites: BenchmarkSuiteView[] }) {
   return (
     <>
       <section className="mx-auto flex max-w-[1240px] flex-wrap items-start justify-between gap-x-6 gap-y-3 px-5 pt-9 sm:px-8">
-        <p className="max-w-[80ch] text-[13px] text-ink-2">
-          Click a column to sort, a row to open its run record, and pick the
-          metrics to show. MAE, RMSE and CRPS are in cases and only comparable
+        <p className="max-w-[80ch] text-[14px] leading-[1.5] text-ink-2">
+          Use a column&apos;s sort arrows to rank by it, open a row for its run
+          record, and pick the metrics to show. MAE, RMSE and CRPS are in cases and only comparable
           within one suite; normalised CRPS is the cross-dataset figure.
         </p>
         <MetricPicker
@@ -518,7 +610,7 @@ export function BenchmarkSuites({ suites }: { suites: BenchmarkSuiteView[] }) {
           key={suite.dataset}
           className="mx-auto max-w-[1240px] px-5 sm:px-8 pt-8"
         >
-          <h2 className="mb-2 font-brand text-[22px] font-medium text-ink">
+          <h2 className="mb-2 text-[20px] font-medium text-ink">
             {suite.heading}
           </h2>
           <SuiteTable suite={suite} shown={shown} />

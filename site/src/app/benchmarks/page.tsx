@@ -9,13 +9,15 @@ import {
 import { BENCHMARKS_LIVE } from "@/lib/flags";
 import { getRegistry } from "@/lib/registry";
 
+const LINK = "font-medium text-brand hover:underline";
+
 export const metadata: Metadata = {
   title: "Benchmarks",
   description:
-    "Benchmark results are added soon — controlled Chap evaluations against pinned commits, nothing self-reported.",
+    "Backtest results for every listed pin, from controlled Chap evaluations — nothing self-reported.",
 };
 
-/** Rendered until real benchmark results exist — the methodology is still being decided. */
+/** Rendered until real benchmark results exist. */
 function BenchmarksComingSoon() {
   return (
     <main>
@@ -30,8 +32,7 @@ function BenchmarksComingSoon() {
           <p className="max-w-[58ch] text-[16px] leading-[1.7] text-ink-2">
             Every score on this page will come from a controlled Chap
             evaluation of a pinned commit — nothing self-reported. No
-            benchmarks have been run yet, and exactly how they will be run is
-            still being decided, so results are not published yet.
+            results have been published yet.
           </p>
         </div>
       </section>
@@ -111,27 +112,32 @@ export default function BenchmarksPage() {
         <section className="mx-auto max-w-[1240px] px-5 sm:px-8 pt-9">
           <div className="d2-card px-[26px] py-6">
             <div className="font-brand text-[15px] font-medium text-ink">
-              Methodology — added soon
+              How models are run
             </div>
             <p className="mt-1 max-w-[72ch] text-[13px] leading-[1.6] text-ink-2">
-              Exactly how the benchmark suites are run — harness, datasets,
-              isolation, backtest parameters, ranking — is still being
-              decided. A full methodology description will be published here
-              and in the repo&apos;s{" "}
-              <code className="font-mono text-[12px] text-ink">
-                benchmarks/README.md
-              </code>{" "}
-              once it is settled. Until then, each row&apos;s run record
-              documents what was actually recorded for it.
+              Chap&apos;s{" "}
+              <a href="https://github.com/dhis2-chap/chap_benchmarking" className={LINK}>
+                benchmarking server
+              </a>{" "}
+              installs every listed pin with{" "}
+              <code className="font-mono text-[12px] text-ink">chap-admin</code>{" "}
+              and backtests it on a schedule, on each of the{" "}
+              <a href="https://github.com/dhis2/climate-health-data" className={LINK}>
+                datasets
+              </a>{" "}
+              it can run on. A{" "}
+              <a
+                href="https://chap.dhis2.org/chap-modeling-platform/contributor/evaluation_pipeline/"
+                className={LINK}
+              >
+                backtest
+              </a>{" "}
+              trains the model on the history up to a cut-off, forecasts the
+              next few months, and repeats from later cut-offs; the forecasts
+              are scored against the observed cases with Chap&apos;s own
+              metrics. Each row&apos;s run record shows the settings it ran
+              with. How the suites are ranked is not settled yet.
             </p>
-            <a
-              href="https://chap.dhis2.org/chap-modeling-platform/external_models/running_models_in_chap/"
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-flex font-brand text-[12.5px] font-medium text-brand hover:text-brand-dark"
-            >
-              Read the Chap evaluation documentation ↗
-            </a>
           </div>
         </section>
       ) : null}

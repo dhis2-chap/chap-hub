@@ -1,9 +1,9 @@
 /**
- * Leaderboard metric columns, kept free of the build-time loaders in
+ * Benchmark table metric columns, kept free of the build-time loaders in
  * benchmarks.ts (node:fs) so the client table can import them.
  */
 
-/** A metric the leaderboard can show as a column, and how to rank by it. */
+/** A metric the benchmark tables can show as a column, and how to rank by it. */
 export interface MetricColumn {
   id: string;
   label: string;

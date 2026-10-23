@@ -8,12 +8,13 @@ import {
   type Registry,
 } from "./registry";
 import { inMetricOrder, type MetricColumn } from "./metrics";
-import { datasetNameFor } from "./presentation";
+import { datasetNameFor, datasetSourceFor } from "./presentation";
 import {
   benchmarkResultsSchema,
   type Benchmark,
   type BenchmarkResults,
   type MetricInfo,
+  type Model,
 } from "./schema";
 
 /**
@@ -144,7 +145,9 @@ export interface BenchmarkRowView {
   modelId: string;
   name: string;
   versionTag: string;
-  /** "chapkit_ghr_model@dfb2e3f · 0.1.3" */
+  /** Whether versionTag is the model's stable pin; the table shows "stable" then. */
+  isStable: boolean;
+  /** "monthly_climate · chapkit_ghr_model@dfb2e3f" */
   pinLine: string;
   measured: boolean;
   /** Every metric of the run, formatted, in chap-core's default order; [] when unmeasured. */
@@ -165,7 +168,8 @@ export interface BenchmarkSuiteView {
   measured: number;
   /** Every metric some run of the suite records, in chap-core's default order. */
   columns: MetricColumn[];
-  runContext: { k: string; v: string }[];
+  /** `href` links a value to its source, e.g. the dataset's files. */
+  runContext: { k: string; v: string; href?: string }[];
   /** Under-table note about pins with no run yet; null when all are measured. */
   pendingNote: string | null;
   rows: BenchmarkRowView[];
@@ -189,9 +193,31 @@ function suiteIdOf(bench: Benchmark): string | null {
 }
 
 /**
- * One suite per dataset that has recorded runs: measured rows first (best
- * normalised CRPS first, plain CRPS as fallback), then every other listed
- * model at its stable pin as an unmeasured row.
+ * The run to show per model and configuration: the stable pin's if it has
+ * one, otherwise the newest version that has one (versions are listed newest
+ * first). Older runs stay in the results, just not in the suite table.
+ */
+function newestRuns(byId: Map<string, Model>, runs: Benchmark[]): Benchmark[] {
+  const rank = (b: Benchmark) => {
+    const model = byId.get(b.model)!;
+    return b.version === model.channels.stable
+      ? -1
+      : model.versions.findIndex((v) => v.version === b.version);
+  };
+  const best = new Map<string, Benchmark>();
+  for (const b of runs) {
+    const key = `${b.model}.${b.run?.configuration ?? ""}`;
+    const current = best.get(key);
+    if (!current || rank(b) < rank(current)) best.set(key, b);
+  }
+  return [...best.values()];
+}
+
+/**
+ * One suite per dataset that has recorded runs: one row per model and
+ * configuration (see newestRuns), measured rows first (best normalised CRPS
+ * first, plain CRPS as fallback), then every other listed model at its
+ * stable pin as an unmeasured row.
  */
 export function buildBenchmarkSuites(
   registry: Registry,
@@ -204,7 +230,10 @@ export function buildBenchmarkSuites(
   const datasets = [...new Set(records.map((b) => b.dataset))].sort();
 
   return datasets.map((dataset) => {
-    const runs = records.filter((b) => b.dataset === dataset);
+    const runs = newestRuns(
+      byId,
+      records.filter((b) => b.dataset === dataset),
+    );
     const primary = runs[0];
     const params = primary.run;
     const datasetName = datasetNameFor(dataset);
@@ -217,7 +246,8 @@ export function buildBenchmarkSuites(
           modelId: b.model,
           name: model.display_name,
           versionTag: b.version,
-          pinLine: `${b.run?.configuration ? `${b.run.configuration} · ` : ""}${b.model}@${shortCommit(b.commit)} · ${b.version}`,
+          isStable: b.version === model.channels.stable,
+          pinLine: `${b.run?.configuration ? `${b.run.configuration} · ` : ""}${b.model}@${shortCommit(b.commit)}`,
           measured: true,
           metrics: metricViews(b, metrics),
           values: b.metrics,
@@ -240,7 +270,8 @@ export function buildBenchmarkSuites(
           modelId: m.id,
           name: m.display_name,
           versionTag: stable.version,
-          pinLine: `${m.id}@${shortCommit(stable.commit)} · ${stable.version}`,
+          isStable: true,
+          pinLine: `${m.id}@${shortCommit(stable.commit)}`,
           measured: false,
           metrics: [],
           values: {},
@@ -248,8 +279,13 @@ export function buildBenchmarkSuites(
         };
       });
 
-    const runContext: { k: string; v: string }[] = [];
-    runContext.push({ k: "Dataset", v: datasetName });
+    const runContext: BenchmarkSuiteView["runContext"] = [];
+    const source = datasetSourceFor(dataset);
+    runContext.push(
+      source
+        ? { k: "Dataset", v: datasetName, href: source }
+        : { k: "Dataset", v: datasetName },
+    );
     if (params?.observations !== undefined) {
       runContext.push({
         k: "Observations",

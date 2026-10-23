@@ -87,3 +87,20 @@ export const DATASET_NAME: Record<string, string> = {
 export function datasetNameFor(id: string): string {
   return DATASET_NAME[id] ?? id.replace(/-/g, " ");
 }
+
+/**
+ * Where each suite's data comes from: the benchmarking server seeds its
+ * evaluation sets from these admin-1 monthly CSV + GeoJSON pairs
+ * (dhis2-chap/chap_benchmarking, example_config/dataset_seeds.yaml).
+ */
+const DATASET_SOURCE_ROOT =
+  "https://github.com/dhis2/climate-health-data/tree/af362d5260c6";
+export const DATASET_SOURCE: Record<string, string> = {
+  "vietnam-monthly": `${DATASET_SOURCE_ROOT}/vnm`,
+  "laos-monthly": `${DATASET_SOURCE_ROOT}/lao`,
+  "thailand-monthly": `${DATASET_SOURCE_ROOT}/tha`,
+};
+
+export function datasetSourceFor(id: string): string | null {
+  return DATASET_SOURCE[id] ?? null;
+}

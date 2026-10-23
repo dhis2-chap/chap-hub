@@ -301,52 +301,68 @@ function BenchmarksTab({ view }: { view: ModelDetailView }) {
       </p>
     );
   }
-  const p = b.provenance;
   return (
     <div>
       <h2 className={H2}>Benchmarks</h2>
       <p className={LEDE}>
-        CRPS — lower is better. Measured on {p.dataset} at {p.versionTag}
-        {p.configuration ? <> with the {p.configuration} configuration</> : null}
-        ,{" "}
-        {p.evaluatedAt}
-        {p.runUrl ? (
-          <>
-            {" · "}
-            <a
-              href={p.runUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-brand hover:underline"
-            >
-              raw output
-            </a>
-          </>
-        ) : null}
-        .
+        Every recorded run of this model, newest version first, scored with
+        chap-core&apos;s default metrics. The best value in each column is in
+        bold; hover a metric for its definition.
       </p>
-      {b.headline.length > 0 ? (
-        <dl className="d2-card mb-5 grid gap-x-6 gap-y-5 px-5 py-4 sm:grid-cols-2 lg:grid-cols-3">
-          {b.headline.map((h) => (
-            <div key={h.id}>
-              <dd className="font-brand text-[22px] font-medium text-ink">
-                {h.value}
-              </dd>
-              <dt className="mt-1 text-[14px] text-ink-2">{h.label}</dt>
-              {h.description ? (
-                <dd className="mt-0.5 text-[12.5px] leading-[1.45] text-ink-3">
-                  {h.description}
-                </dd>
-              ) : null}
-            </div>
-          ))}
-        </dl>
-      ) : null}
+      {b.byVersion.map((t) => (
+        <div key={t.datasetName} className="mb-5">
+          <div className="mb-2 font-medium text-ink">{t.datasetName}</div>
+          <div className="overflow-x-auto">
+            <table className="d2-table" style={{ minWidth: 260 + t.columns.length * 110 }}>
+              <thead>
+                <tr>
+                  <th className="text-left" scope="col">
+                    <span className="d2-table-head">Version</span>
+                  </th>
+                  <th className="text-left" scope="col">
+                    <span className="d2-table-head">Configuration</span>
+                  </th>
+                  {t.columns.map((c) => (
+                    <th key={c.id} scope="col" title={c.description}>
+                      <span className="d2-table-head justify-end">{c.label}</span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {t.rows.map((r) => (
+                  <tr key={`${r.versionTag}.${r.configuration ?? ""}`}>
+                    <td className="whitespace-nowrap font-mono text-[13px] text-ink">
+                      {r.versionTag}
+                      {r.isStable ? (
+                        <span className="d2-tag d2-tag-neutral ml-2 font-body">stable</span>
+                      ) : null}
+                    </td>
+                    <td className="font-mono text-[13px] text-ink-2">
+                      {r.configuration ?? "—"}
+                    </td>
+                    {r.values.map((v, i) => (
+                      <td
+                        key={t.columns[i].id}
+                        className={`text-right font-mono ${
+                          r.best[i] ? "font-bold text-ink" : "text-ink-2"
+                        }`}
+                      >
+                        {v}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
       <div className="grid gap-5 lg:grid-cols-2">
         {b.comparison.length > 0 ? (
           <div className="d2-card p-5">
             <div className="mb-3 font-medium text-ink">
-              Model comparison · {p.dataset} · best configuration each
+              Model comparison · {b.comparisonDataset} · best configuration each
             </div>
             <ComparisonChart items={b.comparison} />
           </div>

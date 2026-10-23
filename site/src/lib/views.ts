@@ -19,7 +19,13 @@ import type {
   ModelKind,
   ModelVersion,
 } from "./schema";
-import { benchmarksFor, metricViews, type MetricView } from "./benchmarks";
+import { benchmarksFor, metricViews } from "./benchmarks";
+import {
+  DEFAULT_METRIC_COLUMNS,
+  inMetricOrder,
+  metricRankKey,
+  type MetricColumn,
+} from "./metrics";
 import type { Proposals } from "./proposals";
 import {
   COV_LABEL,
@@ -182,17 +188,26 @@ export interface ConfigurationView {
 export interface BenchmarksView {
   /** Each model's best configuration on the primary record's dataset. */
   comparison: { name: string; crps: number; self: boolean }[];
-  /** Provenance + headline metrics of the primary record. */
-  provenance: {
-    dataset: string;
+  /** The dataset `comparison` is measured on. */
+  comparisonDataset: string;
+  /** Every recorded run of the model, one table per dataset. */
+  byVersion: VersionComparisonView[];
+}
+
+/** One dataset's runs of one model, newest version first, to compare versions. */
+export interface VersionComparisonView {
+  datasetName: string;
+  /** chap-core's default metrics that some run records. */
+  columns: { id: string; label: string; description: string }[];
+  rows: {
     versionTag: string;
+    isStable: boolean;
     configuration: string | null;
-    evaluatedAt: string;
-    harnessTool: string;
-    runUrl: string | null;
-  };
-  /** Every metric of the primary record, named and described by chap-core. */
-  headline: MetricView[];
+    /** Formatted values, one per column; "—" where the run has none. */
+    values: string[];
+    /** Per column: the table's best value; none when every run ties. */
+    best: boolean[];
+  }[];
 }
 
 export interface ModelDetailView {
@@ -313,19 +328,72 @@ function benchmarksView(
     })
     .filter((c) => c !== null);
 
-  const headline = metricViews(primary, metrics);
+  const byVersion = [...new Set(records.map((b) => b.dataset))]
+    .sort()
+    .map((dataset) => versionComparison(model, dataset, records, metrics));
 
   return {
     comparison: comparison.length > 1 ? comparison : [],
-    provenance: {
-      dataset: primary.dataset,
-      versionTag: primary.version,
-      configuration: primary.run?.configuration ?? null,
-      evaluatedAt: primary.evaluated_at,
-      harnessTool: primary.harness.tool,
-      runUrl: primary.harness.run ?? null,
-    },
-    headline,
+    comparisonDataset: datasetNameFor(primary.dataset),
+    byVersion,
+  };
+}
+
+function versionComparison(
+  model: Model,
+  dataset: string,
+  records: Benchmark[],
+  metrics: MetricInfo[],
+): VersionComparisonView {
+  const order = (b: Benchmark) =>
+    model.versions.findIndex((v) => v.version === b.version);
+  const runs = records
+    .filter((b) => b.dataset === dataset)
+    .sort(
+      (a, b) =>
+        order(a) - order(b) ||
+        (a.run?.configuration ?? "").localeCompare(b.run?.configuration ?? ""),
+    );
+  const columns: MetricColumn[] = inMetricOrder(metrics)
+    .filter(
+      (m) =>
+        DEFAULT_METRIC_COLUMNS.includes(m.id) &&
+        runs.some((b) => b.metrics[m.id] !== undefined),
+    )
+    .map((m) => ({
+      id: m.id,
+      label: m.displayName,
+      description: m.description,
+      target: m.target,
+      targetBehavior: m.targetBehavior,
+      optimizationDirection: m.optimizationDirection,
+    }));
+  // A column's best rank key, or null when every run ties (nothing to mark).
+  const bestKey = columns.map((c) => {
+    const keys = runs
+      .filter((b) => b.metrics[c.id] !== undefined)
+      .map((b) => metricRankKey(c, b.metrics[c.id]));
+    const min = Math.min(...keys);
+    return keys.some((k) => k !== min) ? min : null;
+  });
+
+  return {
+    datasetName: datasetNameFor(dataset),
+    columns: columns.map(({ id, label, description }) => ({ id, label, description })),
+    rows: runs.map((b) => {
+      const formatted = new Map(metricViews(b, metrics).map((m) => [m.id, m.value]));
+      return {
+        versionTag: b.version,
+        isStable: b.version === model.channels.stable,
+        configuration: b.run?.configuration ?? null,
+        values: columns.map((c) => formatted.get(c.id) ?? "—"),
+        best: columns.map(
+          (c, i) =>
+            b.metrics[c.id] !== undefined &&
+            metricRankKey(c, b.metrics[c.id]) === bestKey[i],
+        ),
+      };
+    }),
   };
 }
 
