@@ -163,7 +163,7 @@ export interface BenchmarkSuiteView {
   datasetName: string;
   /** "Laos admin-1 monthly · horizon 3" */
   heading: string;
-  /** "1 of 5 listed models evaluated" */
+  /** "4 of 5 configured models evaluated", one per table row. */
   countLine: string;
   measured: number;
   /** Every metric some run of the suite records, in chap-core's default order. */
@@ -216,8 +216,8 @@ function newestRuns(byId: Map<string, Model>, runs: Benchmark[]): Benchmark[] {
 /**
  * One suite per dataset that has recorded runs: one row per model and
  * configuration (see newestRuns), measured rows first (best normalised CRPS
- * first, plain CRPS as fallback), then every other listed model at its
- * stable pin as an unmeasured row.
+ * first, plain CRPS as fallback), then every other configuration of a
+ * listed model at its stable pin as an unmeasured row.
  */
 export function buildBenchmarkSuites(
   registry: Registry,
@@ -260,24 +260,36 @@ export function buildBenchmarkSuites(
           (b.values.crps_norm ?? b.values.crps),
       );
 
-    const measuredModels = new Set(runs.map((b) => b.model));
-    const pendingRows = models
-      .filter((m) => !measuredModels.has(m.id))
-      .map((m): BenchmarkRowView => {
-        const stable = stableVersion(m);
-        return {
-          id: `${m.id}@${stable.version}`,
-          modelId: m.id,
-          name: m.display_name,
-          versionTag: stable.version,
-          isStable: true,
-          pinLine: `${m.id}@${shortCommit(stable.commit)}`,
-          measured: false,
-          metrics: [],
-          values: {},
-          suiteLine: `${m.id}@${shortCommit(stable.commit)}`,
-        };
-      });
+    // A row per configured model (`<model>:<configuration>`), so the count
+    // line counts what the table lists. A run without a configuration covers
+    // every configuration of its model.
+    const covered = (m: Model, key: string | null) =>
+      runs.some(
+        (b) =>
+          b.model === m.id &&
+          (key === null || !b.run?.configuration || b.run.configuration === key),
+      );
+    const pendingRows = models.flatMap((m) => {
+      const stable = stableVersion(m);
+      const keys = Object.keys(m.configurations);
+      return (keys.length > 0 ? keys : [null])
+        .filter((key) => !covered(m, key))
+        .map(
+          (key): BenchmarkRowView => ({
+            id: `${m.id}@${stable.version}${key ? `.${key}` : ""}`,
+            modelId: m.id,
+            name: m.display_name,
+            versionTag: stable.version,
+            isStable: true,
+            pinLine: `${key ? `${key} · ` : ""}${m.id}@${shortCommit(stable.commit)}`,
+            measured: false,
+            metrics: [],
+            values: {},
+            suiteLine: `${m.id}@${shortCommit(stable.commit)}`,
+          }),
+        );
+    });
+    const listed = measuredRows.length + pendingRows.length;
 
     const runContext: BenchmarkSuiteView["runContext"] = [];
     const source = datasetSourceFor(dataset);
@@ -310,8 +322,8 @@ export function buildBenchmarkSuites(
       pendingRows.length === 0
         ? null
         : pendingRows.length === 1
-          ? "One listed model has no evaluation on this suite yet. A row appears the moment a run lands — the page never interpolates a score."
-          : `${NUMBER_WORDS[pendingRows.length] ?? pendingRows.length} listed models have no evaluation on this suite yet. A row appears the moment a run lands — the page never interpolates a score.`;
+          ? "One configured model has no evaluation on this suite yet. A row appears the moment a run lands — the page never interpolates a score."
+          : `${NUMBER_WORDS[pendingRows.length] ?? pendingRows.length} configured models have no evaluation on this suite yet. A row appears the moment a run lands — the page never interpolates a score.`;
 
     return {
       dataset,
@@ -320,8 +332,8 @@ export function buildBenchmarkSuites(
         params?.horizon !== undefined
           ? `${datasetName} · horizon ${params.horizon}`
           : datasetName,
-      countLine: `${measuredModels.size} of ${models.length} listed models evaluated`,
-      measured: measuredModels.size,
+      countLine: `${measuredRows.length} of ${listed} configured models evaluated`,
+      measured: measuredRows.length,
       columns: inMetricOrder(metrics)
         .filter((m) => runs.some((b) => b.metrics[m.id] !== undefined))
         .map((m) => ({

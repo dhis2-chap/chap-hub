@@ -154,7 +154,7 @@ describe("buildBenchmarkSuites", () => {
     const suite = suites[0];
 
     expect(suite.heading).toBe("Vietnam monthly · horizon 3");
-    expect(suite.countLine).toBe("1 of 4 listed models evaluated");
+    expect(suite.countLine).toBe("1 of 5 configured models evaluated");
     // Columns are the metrics the suite's runs record, in chap-core's default order.
     expect(suite.columns.map((c) => c.id)).toEqual(["mae", "rmse", "crps", "crps_norm"]);
     expect(suite.runContext).toContainEqual({ k: "Observations", v: "2,808 rows" });
@@ -164,11 +164,17 @@ describe("buildBenchmarkSuites", () => {
       v: "Vietnam monthly",
       href: "https://github.com/dhis2/climate-health-data/tree/af362d5260c6/vnm",
     });
-    expect(suite.pendingNote).toMatch(/^Three listed models/);
+    expect(suite.pendingNote).toMatch(/^Four configured models/);
 
     // Starters are scaffolding, never listed as a model awaiting a run.
+    // One row per configured model of every listed (non-starter) model.
     expect(suite.rows).toHaveLength(
-      registry.models.filter((m) => m.kind !== "starter").length,
+      registry.models
+        .filter((m) => m.kind !== "starter")
+        .reduce((n, m) => n + Math.max(1, Object.keys(m.configurations).length), 0),
+    );
+    expect(suite.rows.map((r) => r.pinLine.split(" · ")[0])).toContain(
+      "monthly_selfhistory",
     );
     const [first, ...rest] = suite.rows;
     expect(first.measured).toBe(true);
@@ -236,8 +242,8 @@ describe("buildBenchmarkSuites", () => {
       "auto_arima_chapkit",
       "chapkit_simple_multistep_model",
     ]);
-    expect(suite.countLine).toBe("2 of 4 listed models evaluated");
-    expect(suite.pendingNote).toMatch(/^Two listed models/);
+    expect(suite.countLine).toBe("2 of 5 configured models evaluated");
+    expect(suite.pendingNote).toMatch(/^Three configured models/);
   });
 });
 
