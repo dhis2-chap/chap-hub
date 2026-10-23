@@ -69,23 +69,34 @@ function CheckboxIcon() {
   );
 }
 
-/** The @dhis2-ui/table Sorter: `asc` lights the column ranked by. */
+type SortDirection = "asc" | "desc";
+
+/**
+ * The @dhis2-ui/table Sorter: `asc` ranks best first, `desc` worst first;
+ * columns not ranked by show `default`.
+ */
 function Sorter({
-  active,
+  direction,
   label,
   onClick,
 }: {
-  active: boolean;
+  direction: SortDirection | "default";
   label: string;
   onClick: () => void;
 }) {
+  const title =
+    direction === "asc"
+      ? `Ranked by ${label}, best first — click for worst first`
+      : direction === "desc"
+        ? `Ranked by ${label}, worst first — click for best first`
+        : `Rank by ${label}`;
   return (
     <button
       type="button"
       className="d2-table-sorter"
-      data-direction={active ? "asc" : "default"}
-      title={`Rank by ${label}`}
-      aria-label={`Rank by ${label}`}
+      data-direction={direction}
+      title={title}
+      aria-label={title}
       onClick={onClick}
     >
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
@@ -396,8 +407,10 @@ function SuiteTable({
   suite: BenchmarkSuiteView;
   shown: string[];
 }) {
-  // Ranked by the first shown metric until another column's sorter is used.
+  // Ranked by the first shown metric, best first, until a sorter is used;
+  // using the ranked column's sorter again flips the direction.
   const [sortPick, setSortPick] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [openIndex, setOpenIndex] = useState(0);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -407,11 +420,25 @@ function SuiteTable({
     columns.find((c) => c.id === sortPick) ?? columns[0] ?? null;
   const rankOf = (row: BenchmarkRowView) => {
     const v = sortColumn ? row.values[sortColumn.id] : undefined;
-    return v === undefined ? Infinity : metricRankKey(sortColumn!, v);
+    return v === undefined ? undefined : metricRankKey(sortColumn!, v);
+  };
+  // Rows without a value for the ranked metric stay last either way.
+  const compare = (a: BenchmarkRowView, b: BenchmarkRowView) => {
+    const ka = rankOf(a);
+    const kb = rankOf(b);
+    if (ka === undefined || kb === undefined)
+      return (ka === undefined ? 1 : 0) - (kb === undefined ? 1 : 0);
+    return sortDirection === "asc" ? ka - kb : kb - ka;
+  };
+  const sortBy = (id: string) => {
+    if (sortColumn?.id === id)
+      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+    else setSortDirection("asc");
+    setSortPick(id);
   };
   const measured = suite.rows.filter((r) => r.measured);
   const rows = (
-    sortColumn ? [...measured].sort((a, b) => rankOf(a) - rankOf(b)) : measured
+    sortColumn ? [...measured].sort(compare) : measured
   ).concat(suite.rows.filter((r) => !r.measured));
 
   const openRow = (i: number) => {
@@ -472,14 +499,22 @@ function SuiteTable({
                   key={c.id}
                   scope="col"
                   title={c.description}
-                  aria-sort={sortColumn?.id === c.id ? "ascending" : undefined}
+                  aria-sort={
+                    sortColumn?.id === c.id
+                      ? sortDirection === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : undefined
+                  }
                 >
                   <span className="d2-table-head justify-end">
                     {c.label}
                     <Sorter
-                      active={sortColumn?.id === c.id}
+                      direction={
+                        sortColumn?.id === c.id ? sortDirection : "default"
+                      }
                       label={c.label}
-                      onClick={() => setSortPick(c.id)}
+                      onClick={() => sortBy(c.id)}
                     />
                   </span>
                 </th>
@@ -592,7 +627,7 @@ export function BenchmarkSuites({ suites }: { suites: BenchmarkSuiteView[] }) {
     <>
       <section className="mx-auto flex max-w-[1240px] flex-wrap items-start justify-between gap-x-6 gap-y-3 px-5 pt-9 sm:px-8">
         <p className="max-w-[80ch] text-[14px] leading-[1.5] text-ink-2">
-          Use a column&apos;s sort arrows to rank by it, open a row for its run
+          Use a column&apos;s sort arrows to rank by it (again to reverse), open a row for its run
           record, and pick the metrics to show. MAE, RMSE and CRPS are in cases and only comparable
           within one suite; normalised CRPS is the cross-dataset figure.
         </p>
