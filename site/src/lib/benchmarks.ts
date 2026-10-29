@@ -170,14 +170,8 @@ export interface BenchmarkSuiteView {
   columns: MetricColumn[];
   /** `href` links a value to its source, e.g. the dataset's files. */
   runContext: { k: string; v: string; href?: string }[];
-  /** Under-table note about pins with no run yet; null when all are measured. */
-  pendingNote: string | null;
   rows: BenchmarkRowView[];
 }
-
-const NUMBER_WORDS = [
-  "No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
-];
 
 function periodUnit(periodType: string | undefined): string {
   if (periodType === "monthly") return "months";
@@ -318,13 +312,6 @@ export function buildBenchmarkSuites(
     }
     runContext.push({ k: "Harness", v: primary.harness.tool });
 
-    const pendingNote =
-      pendingRows.length === 0
-        ? null
-        : pendingRows.length === 1
-          ? "One configured model has no evaluation on this suite yet. A row appears the moment a run lands — the page never interpolates a score."
-          : `${NUMBER_WORDS[pendingRows.length] ?? pendingRows.length} configured models have no evaluation on this suite yet. A row appears the moment a run lands — the page never interpolates a score.`;
-
     return {
       dataset,
       datasetName,
@@ -345,7 +332,6 @@ export function buildBenchmarkSuites(
           optimizationDirection: m.optimizationDirection,
         })),
       runContext,
-      pendingNote,
       rows: [...measuredRows, ...pendingRows],
     };
   });

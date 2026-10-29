@@ -588,9 +588,6 @@ function SuiteTable({
           </tbody>
         </table>
       </div>
-      {suite.pendingNote ? (
-        <p className="mt-2 text-[13px] text-ink-2">{suite.pendingNote}</p>
-      ) : null}
 
       <RunRecordModal
         dialogRef={dialogRef}

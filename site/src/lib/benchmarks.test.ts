@@ -164,7 +164,6 @@ describe("buildBenchmarkSuites", () => {
       v: "Vietnam monthly",
       href: "https://github.com/dhis2/climate-health-data/tree/af362d5260c6/vnm",
     });
-    expect(suite.pendingNote).toMatch(/^Four configured models/);
 
     // Starters are scaffolding, never listed as a model awaiting a run.
     // One row per configured model of every listed (non-starter) model.
@@ -243,7 +242,6 @@ describe("buildBenchmarkSuites", () => {
       "chapkit_simple_multistep_model",
     ]);
     expect(suite.countLine).toBe("2 of 5 configured models evaluated");
-    expect(suite.pendingNote).toMatch(/^Three configured models/);
   });
 });
 
