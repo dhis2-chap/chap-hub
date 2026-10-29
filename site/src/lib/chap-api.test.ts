@@ -5,6 +5,7 @@ import { loadRegistry, stableVersion } from "./registry";
 const registry = loadRegistry();
 const multistep = registry.models.find((m) => m.id === "chapkit_simple_multistep_model")!;
 const stable = stableVersion(multistep);
+const starter = registry.models.find((m) => m.kind === "starter")!;
 const suite = SUITES[0];
 
 type Backtest = Specification["backtests"][number];
@@ -82,7 +83,7 @@ describe("toBenchmarks", () => {
     expect(records.map((r) => r.metrics.crps)).toEqual([1]);
   });
 
-  it("skips what is not a listed pin and configuration, or has no metrics", () => {
+  it("skips what is not a listed pin and configuration, a starter, or has no metrics", () => {
     const { records, skipped } = toBenchmarks(
       registry,
       suite,
@@ -91,6 +92,12 @@ describe("toBenchmarks", () => {
         backtest({ id: 2, digest: "0".repeat(40) }),
         backtest({ id: 3, name: "nightly" }),
         backtest({ id: 4, metrics: {} }),
+        backtest({
+          id: 5,
+          template: starter.service_id,
+          name: Object.keys(starter.configurations)[0],
+          digest: stableVersion(starter).commit,
+        }),
       ),
     );
     expect(records).toEqual([]);
@@ -99,6 +106,7 @@ describe("toBenchmarks", () => {
       `${multistep.service_id}:monthly_climate: commit ${"0".repeat(40)} is not a pin`,
       `${multistep.service_id}:nightly: not a listed configuration`,
       `${multistep.service_id}:monthly_climate: no metrics`,
+      `${starter.service_id}:${Object.keys(starter.configurations)[0]}: a starter, not benchmarked`,
     ]);
   });
 });

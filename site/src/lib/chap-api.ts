@@ -76,7 +76,9 @@ export function toBenchmarks(
     const metrics = backtest.aggregateMetrics;
     const reason = !model
       ? "not a listed model"
-      : !version
+      : model.kind === "starter"
+        ? "a starter, not benchmarked"
+        : !version
         ? `commit ${cm.modelTemplate.sourceDigest} is not a pin`
         : !cm.name.startsWith(`${cm.modelTemplate.name}:`) ||
           !(configuration in model.configurations)
