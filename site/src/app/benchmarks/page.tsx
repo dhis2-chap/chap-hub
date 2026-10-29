@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BenchmarkSuite } from "@/components/BenchmarksClient";
-import { buildBenchmarkSuites, getBenchmarks } from "@/lib/benchmarks";
+import { BenchmarkSuites } from "@/components/BenchmarksClient";
+import {
+  buildBenchmarkSuites,
+  getBenchmarks,
+  getMetricDefinitions,
+} from "@/lib/benchmarks";
 import { BENCHMARKS_LIVE } from "@/lib/flags";
 import { getRegistry } from "@/lib/registry";
+
+const LINK = "font-medium text-brand hover:underline";
 
 export const metadata: Metadata = {
   title: "Benchmarks",
   description:
-    "Benchmark results are added soon — controlled Chap evaluations against pinned commits, nothing self-reported.",
+    "Backtest results for every listed pin, from controlled Chap evaluations — nothing self-reported.",
 };
 
-/** Rendered until real benchmark results exist — the methodology is still being decided. */
+/** Rendered until real benchmark results exist. */
 function BenchmarksComingSoon() {
   return (
     <main>
@@ -26,8 +32,7 @@ function BenchmarksComingSoon() {
           <p className="max-w-[58ch] text-[16px] leading-[1.7] text-ink-2">
             Every score on this page will come from a controlled Chap
             evaluation of a pinned commit — nothing self-reported. No
-            benchmarks have been run yet, and exactly how they will be run is
-            still being decided, so results are not published yet.
+            results have been published yet.
           </p>
         </div>
       </section>
@@ -40,10 +45,9 @@ function BenchmarksComingSoon() {
           <p className="mt-1 max-w-[72ch] text-[13px] leading-[1.6] text-ink-2">
             One ranked table per reference dataset, with a full run record
             behind every row. The exact datasets, metrics and run parameters
-            will be documented once the methodology is settled. Results land
-            in the repo&apos;s{" "}
-            <code className="font-mono text-[12px] text-ink">benchmarks/</code>{" "}
-            directory by pull request, like everything else.
+            will be documented once the methodology is settled. Results are
+            read from Chap&apos;s benchmarking server each time the site is
+            published.
           </p>
         </div>
       </section>
@@ -68,16 +72,16 @@ function BenchmarksComingSoon() {
 }
 
 export default function BenchmarksPage() {
-  if (!BENCHMARKS_LIVE) return <BenchmarksComingSoon />;
-
   const records = getBenchmarks();
-  const suites = buildBenchmarkSuites(getRegistry(), records);
+  if (!BENCHMARKS_LIVE || records.length === 0) return <BenchmarksComingSoon />;
+
+  const suites = buildBenchmarkSuites(getRegistry(), records, getMetricDefinitions());
   const singleSplitSmoke = records.length === 1 && records[0].run?.splits === 1;
 
   return (
     <main>
       <section className="border-b border-line bg-surface">
-        <div className="mx-auto grid max-w-[1240px] items-end gap-x-14 gap-y-10 px-5 pb-10 pt-11 sm:px-8 sm:pt-16 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="mx-auto max-w-[1240px] px-5 pb-10 pt-11 sm:px-8 sm:pt-16">
           <div>
             <span className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-exp">
               {records.length === 0
@@ -93,38 +97,50 @@ export default function BenchmarksPage() {
               Every score on this page comes from a controlled Chap evaluation
               of a pinned commit — nothing is self-reported.{" "}
               {records.length === 0
-                ? "No run has been recorded yet, so there is nothing to rank — a suite appears the moment its first result lands, by pull request like everything else."
+                ? "No run has been recorded yet, so there is nothing to rank — a suite appears once its first result is published."
                 : singleSplitSmoke
                   ? "Only one model has been evaluated so far, over a single backtest split, so read this as provenance rather than a ranking. Rows without a run stay empty on purpose."
                   : `${records.length} runs have been recorded so far — still early, so read this as provenance rather than a ranking. Rows without a run stay empty on purpose.`}
             </p>
           </div>
-          {suites.length === 1 ? (
-            <div className="d2-card px-5 py-[18px]">
-              <div className="mb-3 font-brand text-[10px] font-medium uppercase tracking-[0.1em] text-ink-3">
-                Run context — identical for every row
-              </div>
-              <div>
-                {suites[0].runContext.map((c) => (
-                  <div
-                    key={c.k}
-                    className="flex items-baseline justify-between gap-4 border-t border-line py-[7px]"
-                  >
-                    <span className="text-[12.5px] text-ink-2">{c.k}</span>
-                    <span className="text-right font-mono text-[12.5px] text-ink">
-                      {c.v}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
         </div>
       </section>
 
-      {suites.map((suite) => (
-        <BenchmarkSuite key={suite.dataset} suite={suite} />
-      ))}
+      <BenchmarkSuites suites={suites} />
+
+      {suites.length > 0 ? (
+        <section className="mx-auto max-w-[1240px] px-5 sm:px-8 pt-9">
+          <div className="d2-card px-[26px] py-6">
+            <div className="font-brand text-[15px] font-medium text-ink">
+              How models are run
+            </div>
+            <p className="mt-1 max-w-[72ch] text-[13px] leading-[1.6] text-ink-2">
+              Chap&apos;s{" "}
+              <a href="https://github.com/dhis2-chap/chap_benchmarking" className={LINK}>
+                benchmarking server
+              </a>{" "}
+              installs every listed pin with{" "}
+              <code className="font-mono text-[12px] text-ink">chap-admin</code>{" "}
+              and backtests it on a schedule, on each of the{" "}
+              <a href="https://github.com/dhis2/climate-health-data" className={LINK}>
+                datasets
+              </a>{" "}
+              it can run on. A{" "}
+              <a
+                href="https://chap.dhis2.org/chap-modeling-platform/contributor/evaluation_pipeline/"
+                className={LINK}
+              >
+                backtest
+              </a>{" "}
+              trains the model on the history up to a cut-off, forecasts the
+              next few months, and repeats from later cut-offs; the forecasts
+              are scored against the observed cases with Chap&apos;s own
+              metrics. Each row&apos;s run record shows the settings it ran
+              with. How the suites are ranked is not settled yet.
+            </p>
+          </div>
+        </section>
+      ) : null}
 
       {suites.length === 0 ? (
         <section className="mx-auto max-w-[1240px] px-5 sm:px-8 pt-9">
@@ -133,13 +149,9 @@ export default function BenchmarksPage() {
               Waiting for the first results
             </div>
             <p className="mt-1 max-w-[64ch] text-[13px] leading-[1.6] text-ink-2">
-              This page renders recorded runs from the repo&apos;s{" "}
-              <code className="font-mono text-[12px] text-ink">
-                benchmarks/
-              </code>{" "}
-              directory — results land by pull request, like everything else.
-              The first file defines the first suite; a row appears the moment
-              a run lands.
+              This page renders the runs read from Chap&apos;s benchmarking
+              server each time the site is published. A row appears once a
+              listed model&apos;s run has been published.
             </p>
           </div>
         </section>
@@ -148,8 +160,8 @@ export default function BenchmarksPage() {
       <section className="mx-auto max-w-[1240px] px-5 sm:px-8 pb-24 pt-9">
         <div className="flex flex-wrap items-center justify-between gap-5 border-t border-line pt-5">
           <span className="text-[13px] text-ink-2">
-            Per-model benchmark charts — horizon curves, baseline comparison,
-            country breakdown — stay on each model&apos;s detail page.
+            Each model&apos;s detail page compares its versions on every
+            dataset.
           </span>
           <Link
             href="/"

@@ -15,8 +15,8 @@ const ENTRIES = [
   },
   {
     kicker: "marketplace",
-    title: "Benchmark records",
-    body: "The file format for benchmark results. Benchmarks will be added soon.",
+    title: "Benchmark results",
+    body: "Where benchmark results come from and how the models are run.",
     href: "https://github.com/dhis2-chap/model-marketplace/blob/main/benchmarks/README.md",
   },
   {

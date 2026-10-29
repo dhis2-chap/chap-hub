@@ -14,11 +14,18 @@ import {
 } from "./registry";
 import type {
   Benchmark,
+  MetricInfo,
   Model,
   ModelKind,
   ModelVersion,
 } from "./schema";
-import { benchmarksFor, skillOf } from "./benchmarks";
+import { benchmarksFor, metricViews } from "./benchmarks";
+import {
+  DEFAULT_METRIC_COLUMNS,
+  inMetricOrder,
+  metricRankKey,
+  type MetricColumn,
+} from "./metrics";
 import type { Proposals } from "./proposals";
 import {
   COV_LABEL,
@@ -179,18 +186,24 @@ export interface ConfigurationView {
 }
 
 export interface BenchmarksView {
-  crpsByHorizon: number[];
-  baseline: number[];
-  comparison: { name: string; mean: number; self: boolean }[];
-  /** Provenance + headline metrics of the primary record. */
-  provenance: {
-    dataset: string;
+  /** Every recorded run of the model, one table per dataset. */
+  byVersion: VersionComparisonView[];
+}
+
+/** One dataset's runs of one model, newest version first, to compare versions. */
+export interface VersionComparisonView {
+  datasetName: string;
+  /** chap-core's default metrics that some run records. */
+  columns: { id: string; label: string; description: string }[];
+  rows: {
     versionTag: string;
-    evaluatedAt: string;
-    harnessTool: string;
-    runUrl: string | null;
-  };
-  headline: { label: string; value: string }[];
+    isStable: boolean;
+    configuration: string | null;
+    /** Formatted values, one per column; "—" where the run has none. */
+    values: string[];
+    /** Per column: the table's best value; none when every run ties. */
+    best: boolean[];
+  }[];
 }
 
 export interface ModelDetailView {
@@ -231,12 +244,6 @@ export interface ModelDetailView {
   inReviewAsOf: string | null;
   configurations: ConfigurationView[];
   benchmarks: BenchmarksView | null;
-  /** Cross-model benchmark state for the CTA card; null while no run exists. */
-  benchmarkSummary: {
-    measured: number;
-    listed: number;
-    suiteNames: string[];
-  } | null;
   verifiedPins: number;
   reviews: number;
   installUrl: string;
@@ -278,65 +285,73 @@ function configCurl(key: string, config: Record<string, unknown>): string {
 
 function benchmarksView(
   model: Model,
-  registry: Registry,
   benchmarks: Benchmark[],
+  metrics: MetricInfo[],
 ): BenchmarksView | null {
   const records = recordsFor(model, benchmarks);
-  const primary = records.find((b) => b.metrics.crps_by_horizon) ?? records[0];
-  if (!primary) return null;
+  if (records.length === 0) return null;
+  return {
+    byVersion: [...new Set(records.map((b) => b.dataset))]
+      .sort()
+      .map((dataset) => versionComparison(model, dataset, records, metrics)),
+  };
+}
 
-  const comparison = registry.models
-    .map((m) => {
-      const onDataset = benchmarksFor(benchmarks, m.id).filter(
-        (b) => b.dataset === primary.dataset,
-      );
-      const mean =
-        onDataset.length > 0
-          ? onDataset.reduce((s, b) => s + b.metrics.crps, 0) / onDataset.length
-          : null;
-      return { name: presentationFor(m.id).abbrev, mean, self: m.id === model.id };
-    })
-    .filter((c): c is { name: string; mean: number; self: boolean } =>
-      typeof c.mean === "number",
+function versionComparison(
+  model: Model,
+  dataset: string,
+  records: Benchmark[],
+  metrics: MetricInfo[],
+): VersionComparisonView {
+  const order = (b: Benchmark) =>
+    model.versions.findIndex((v) => v.version === b.version);
+  const runs = records
+    .filter((b) => b.dataset === dataset)
+    .sort(
+      (a, b) =>
+        order(a) - order(b) ||
+        (a.run?.configuration ?? "").localeCompare(b.run?.configuration ?? ""),
     );
-
-  const skill = skillOf(primary);
-  const headline: { label: string; value: string }[] = [
-    { label: "Mean CRPS", value: primary.metrics.crps.toFixed(2) },
-    ...(primary.metrics.mae !== undefined
-      ? [{ label: "MAE", value: primary.metrics.mae.toFixed(1) }]
-      : []),
-    ...(primary.metrics.rmse !== undefined
-      ? [{ label: "RMSE", value: primary.metrics.rmse.toFixed(1) }]
-      : []),
-    ...(primary.metrics.norm_crps !== undefined
-      ? [
-          {
-            label: "Normalised CRPS",
-            value: primary.metrics.norm_crps.toFixed(6),
-          },
-        ]
-      : []),
-    ...(primary.metrics.coverage_80 !== undefined
-      ? [{ label: "Coverage 80%", value: primary.metrics.coverage_80.toFixed(2) }]
-      : []),
-    ...(skill !== null
-      ? [{ label: "Skill vs baseline", value: `+${skill.toFixed(2)}` }]
-      : []),
-  ];
+  const columns: MetricColumn[] = inMetricOrder(metrics)
+    .filter(
+      (m) =>
+        DEFAULT_METRIC_COLUMNS.includes(m.id) &&
+        runs.some((b) => b.metrics[m.id] !== undefined),
+    )
+    .map((m) => ({
+      id: m.id,
+      label: m.displayName,
+      description: m.description,
+      target: m.target,
+      targetBehavior: m.targetBehavior,
+      optimizationDirection: m.optimizationDirection,
+    }));
+  // A column's best rank key, or null when every run ties (nothing to mark).
+  const bestKey = columns.map((c) => {
+    const keys = runs
+      .filter((b) => b.metrics[c.id] !== undefined)
+      .map((b) => metricRankKey(c, b.metrics[c.id]));
+    const min = Math.min(...keys);
+    return keys.some((k) => k !== min) ? min : null;
+  });
 
   return {
-    crpsByHorizon: primary.metrics.crps_by_horizon ?? [],
-    baseline: primary.metrics.baseline_crps_by_horizon ?? [],
-    comparison: comparison.length > 1 ? comparison : [],
-    provenance: {
-      dataset: primary.dataset,
-      versionTag: primary.version,
-      evaluatedAt: primary.evaluated_at,
-      harnessTool: primary.harness.tool,
-      runUrl: primary.harness.run ?? null,
-    },
-    headline,
+    datasetName: datasetNameFor(dataset),
+    columns: columns.map(({ id, label, description }) => ({ id, label, description })),
+    rows: runs.map((b) => {
+      const formatted = new Map(metricViews(b, metrics).map((m) => [m.id, m.value]));
+      return {
+        versionTag: b.version,
+        isStable: b.version === model.channels.stable,
+        configuration: b.run?.configuration ?? null,
+        values: columns.map((c) => formatted.get(c.id) ?? "—"),
+        best: columns.map(
+          (c, i) =>
+            b.metrics[c.id] !== undefined &&
+            metricRankKey(c, b.metrics[c.id]) === bestKey[i],
+        ),
+      };
+    }),
   };
 }
 
@@ -344,6 +359,7 @@ export function toDetailView(
   model: Model,
   registry: Registry,
   benchmarks: Benchmark[],
+  metrics: MetricInfo[],
   proposals: Proposals,
 ): ModelDetailView {
   const pres = presentationFor(model.id);
@@ -411,17 +427,7 @@ export function toDetailView(
         curl: configCurl(key, configuration.config),
       }),
     ),
-    benchmarks: benchmarksView(model, registry, benchmarks),
-    benchmarkSummary:
-      benchmarks.length > 0
-        ? {
-            measured: new Set(benchmarks.map((b) => b.model)).size,
-            listed: registry.models.length,
-            suiteNames: [
-              ...new Set(benchmarks.map((b) => datasetNameFor(b.dataset))),
-            ],
-          }
-        : null,
+    benchmarks: benchmarksView(model, benchmarks, metrics),
     verifiedPins,
     reviews: verifiedPins * required,
     installUrl:

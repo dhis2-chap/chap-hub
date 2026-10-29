@@ -266,12 +266,11 @@ export const registrySchema = z.object({
 });
 
 /**
- * One benchmark result file: one (model, version, dataset) triple, stored at
- * benchmarks/<model>/<version>/<dataset>.yaml. The loader additionally
- * cross-checks model, version and commit against the registry.
+ * One benchmark result: a listed pin's newest run on one suite, as fetched
+ * from the benchmarking server into benchmarks/results.json. The loader
+ * additionally cross-checks model, version and commit against the registry.
  */
 export const benchmarkSchema = z.object({
-  schema_version: z.literal(1),
   model: z.string().regex(/^[a-z0-9_]+$/),
   version: z.string().min(1),
   commit: z
@@ -294,28 +293,34 @@ export const benchmarkSchema = z.object({
       samples: z.number().int().positive().optional(),
     })
     .optional(),
-  metrics: z.object({
-    crps: z.number().nonnegative(),
-    crps_by_horizon: z.array(z.number().nonnegative()).min(1).optional(),
-    mae: z.number().nonnegative().optional(),
-    rmse: z.number().nonnegative().optional(),
-    /** Normalised CRPS — the only figure comparable across datasets. */
-    norm_crps: z.number().nonnegative().optional(),
-    coverage_80: z.number().min(0).max(1).optional(),
-    baseline_crps: z.number().positive().optional(),
-    baseline_crps_by_horizon: z
-      .array(z.number().nonnegative())
-      .min(1)
-      .optional(),
-  }),
-  /** Machine figures from the run, unnormalised — an order of magnitude. */
-  resources: z
-    .object({
-      wall_seconds: z.number().nonnegative(),
-      cpu_seconds: z.number().nonnegative().optional(),
-      peak_memory_mb: z.number().nonnegative().optional(),
-    })
-    .optional(),
+  /**
+   * The backtest's aggregate metrics, verbatim under chap's metric ids
+   * (crps, crps_norm, mae, coverage_10_90, ...); `metricInfoSchema` says
+   * what each one is. Every record has at least CRPS.
+   */
+  metrics: z
+    .object({ crps: z.number().nonnegative() })
+    .catchall(z.number()),
+});
+
+/**
+ * One of chap-core's scoring metrics, as its
+ * GET /v1/visualization/metrics/{backtest_id} describes it — copied verbatim.
+ */
+export const metricInfoSchema = z.object({
+  id: z.string().min(1),
+  displayName: z.string().min(1),
+  description: z.string(),
+  unit: z.string().nullable(),
+  target: z.number().nullable(),
+  targetBehavior: z.string(),
+  optimizationDirection: z.enum(["minimize", "maximize"]).nullable(),
+});
+
+/** benchmarks/results.json: the metric definitions and the records. */
+export const benchmarkResultsSchema = z.object({
+  metrics: z.array(metricInfoSchema),
+  results: z.array(benchmarkSchema),
 });
 
 export type AssessedStatus = (typeof ASSESSED_STATUSES)[number];
@@ -325,3 +330,5 @@ export type ModelConfiguration = z.infer<typeof configurationSchema>;
 export type Model = z.infer<typeof modelSchema>;
 export type RegistryIndex = z.infer<typeof registrySchema>;
 export type Benchmark = z.infer<typeof benchmarkSchema>;
+export type MetricInfo = z.infer<typeof metricInfoSchema>;
+export type BenchmarkResults = z.infer<typeof benchmarkResultsSchema>;

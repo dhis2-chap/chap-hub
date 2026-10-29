@@ -1,97 +1,80 @@
-# Benchmark store (schema_version 1)
+# Benchmark results
 
-Real evaluation output, one YAML file per **(model, version, dataset)**
-triple. Results land here the same way everything else does — as a pull
-request — so a benchmark number on the site is as reviewable as the pin it
-describes.
+Benchmark results are not stored in this repository. They are read from
+Chap's benchmarking server — a chap instance that backtests models on a cron
+— each time the site is deployed, and baked into the build. The site never
+talks to the server at runtime.
 
-The site loads this directory at build time through the same zod gate as the
-registry (`site/src/lib/schema.ts`): an invalid or inconsistent benchmark
-file fails the build. This directory is currently **empty** — no benchmarks
-have been run. A model with no real result here shows no score at all: there
-are no mock fixtures, no placeholder numbers and no illustrative charts
-anywhere on the site. Until the first results land, the benchmarks page and
-every per-model Benchmarks tab render a "coming soon" state, gated behind
-`BENCHMARKS_LIVE` in `site/src/lib/flags.ts`.
+## How results reach the site
 
-## How the comparison is run — added soon
+The deploy workflow (`.github/workflows/deploy.yml`) runs on every push to
+`main`, every hour and on manual dispatch. Before the build it runs
+`pnpm fetch-benchmarks` (`site/scripts/fetch-benchmarks.ts`), which:
 
-No benchmarks have been run yet, and exactly how they will be run — harness,
-datasets, isolation, backtest parameters, ranking — has not been decided. A
-full methodology description will be added here once that is settled and the
-first official suite has run. Until then, the sections below describe only the
-file contract for recording results, not an existing process.
+1. looks up each suite in `SUITES` (`site/src/lib/chap-api.ts`) on
+   `GET /v1/crud/backtest-specifications`, by its dataset and backtest
+   parameters (`nPeriods`, `nSplits`, `stride`, `nRetrain`) — a specification
+   has no stable name, so no specification id is stored here;
+2. reads that specification's backtests from
+   `GET /v1/crud/backtest-specifications/{id}`;
+3. keeps the newest backtest per configured model that belongs to a listed
+   pin — its model template is a listed model's `service_id`, its
+   `sourceDigest` is one of that model's pinned commits and the configured
+   model is named `<service_id>:<configuration key>` for one of its
+   configurations — and drops every other backtest;
+4. reads chap-core's metric definitions (name, description, unit, target,
+   direction) from `GET /v1/visualization/metrics/{backtest_id}` — the same
+   list whichever backtest is asked about — and keeps those the records use;
+5. writes `{ metrics, results }` to the gitignored `benchmarks/results.json`,
+   which the build validates against the registry and renders.
 
-For the underlying evaluation command, see the Chap documentation for
-[evaluating models](https://chap.dhis2.org/chap-modeling-platform/external_models/running_models_in_chap/).
+Any failure — no token, an unreachable server, a suite that does not resolve
+to exactly one specification, a record the registry rejects — fails the
+deploy, so stale or empty benchmarks are never shipped in place of the real
+ones. Builds without the file (CI, local dev) render no results.
 
-## Layout
+The server's API is gated by a single `CHAP_API_TOKEN` that can write as well
+as read. It is a repository secret used only by the deploy workflow, which
+never runs on pull requests. If it leaks, rotate it on the server and update
+the secret.
 
-The path is part of the contract and is validated against the file content:
+To fetch locally, put both variables in the gitignored `site/.env.local`
+(variables already set in the environment take precedence):
 
-```
-benchmarks/<model_id>/<version>/<dataset>.yaml
-```
-
-- `<model_id>` must be a model listed in `../registry.yaml`
-- `<version>` must be a version tag in that model's file, and the `commit`
-  in the benchmark file must equal that version's pinned commit
-- `<dataset>` is a lowercase dataset id (`[a-z0-9-]`), e.g.
-  `dengue-brazil-monthly`
-
-## Annotated example
-
-Illustrative only — the commit must be a real pin from the model file.
-
-```yaml
-schema_version: 1
-
-model: my_model                  # model id from ../registry.yaml
-version: v2                      # version tag inside models/my_model.yaml
-commit: 1111111111111111111111111111111111111111   # that version's pin
-dataset: dengue-brazil-monthly   # dataset id, also the filename
-
-evaluated_at: 2026-08-31         # date the evaluation ran
-
-harness:
-  tool: chap eval                # what produced the numbers
-  run: https://github.com/...    # optional: CI run / artifact with the raw output
-
-# Optional: the backtest parameters of the run. This is what makes two rows
-# on the benchmarks page comparable, so record it whenever the harness reports it.
-run:
-  configuration: monthly         # configuration key inside the model file
-  observations: 2808             # rows in the dataset
-  horizon: 3                     # forecast horizon, in the model's period type
-  splits: 1                      # backtest splits
-  samples: 200                   # predictive samples
-
-metrics:
-  crps: 0.63                     # mean CRPS over the backtest (required)
-  crps_by_horizon: [0.39, 0.47, 0.58]   # optional, h1..hN
-  mae: 11.8                      # optional; like RMSE and CRPS it is in cases,
-  rmse: 1.21                     #   so only comparable within one dataset
-  norm_crps: 0.045               # optional: normalised CRPS, the one figure
-                                 #   comparable across datasets
-  coverage_80: 0.83              # optional, empirical coverage of the 80% PI
-  baseline_crps: 0.88            # optional: seasonal-naive baseline, same splits
-  baseline_crps_by_horizon: [0.55, 0.71, 0.88]   # optional
-
-# Optional: machine figures, recorded on whatever ran the evaluation and not
-# normalised — treat them as an order of magnitude.
-resources:
-  wall_seconds: 56.61
-  cpu_seconds: 22.05
-  peak_memory_mb: 2061.8
+```bash
+# site/.env.local
+CHAP_API_URL=https://chap-benchmarking.dhis2.org
+CHAP_API_TOKEN=...
 ```
 
-Skill on a model's detail page is derived, never stored:
-`1 − crps / baseline_crps`, only where the file carries the baseline.
+then run `pnpm fetch-benchmarks` in `site/`.
 
-## Benchmarks
+## Record mapping
 
-The benchmarks page groups this store by dataset: each dataset with at least one
-file becomes a suite section, listing its recorded runs ranked by normalised
-CRPS and every other listed model as an explicitly empty "not run" row. A
-score belongs to a commit — re-evaluating a different pin adds a row, it
-never updates an existing one.
+| Record field            | From the backtest                             |
+| ----------------------- | --------------------------------------------- |
+| `model`, `version`      | the listed pin `modelTemplate` resolves to    |
+| `commit`                | `configuredModel.modelTemplate.sourceDigest`  |
+| `run.configuration`     | `configuredModel.name` after `<service_id>:`  |
+| `run.horizon`, `splits` | the specification's `nPeriods`, `nSplits`     |
+| `evaluated_at`          | `created`                                     |
+| `harness.tool`          | `chap <chapVersion>`                          |
+| `metrics`               | `aggregateMetrics`, verbatim — every metric   |
+
+Metrics keep chap's ids (`crps`, `crps_norm`, `mae`, `coverage_10_90`, ...)
+and the site names and describes them with chap-core's own definitions; a
+metric with no definition fails the build. A backtest whose metric
+computation failed (no `crps`) is skipped.
+
+## How models are run
+
+The server's cron installs every listed pin with `chap-admin` and submits a
+backtest for each model on each suite's dataset it can run on (see
+[chap_benchmarking](https://github.com/dhis2-chap/chap_benchmarking)). The
+datasets come from
+[climate-health-data](https://github.com/dhis2/climate-health-data); a
+backtest is chap-core's expanding-window evaluation, described in
+[Evaluation Pipeline](https://chap.dhis2.org/chap-modeling-platform/contributor/evaluation_pipeline/).
+
+How the suites are ranked is not settled yet. Until it is, the site shows the
+server's results as recorded, provenance rather than a ranking.

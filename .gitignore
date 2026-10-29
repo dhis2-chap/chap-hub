@@ -1,1 +1,3 @@
 .vercel
+# fetched at deploy time by `pnpm fetch-benchmarks`
+benchmarks/results.json
