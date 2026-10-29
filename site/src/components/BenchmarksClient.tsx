@@ -622,12 +622,7 @@ export function BenchmarkSuites({ suites }: { suites: BenchmarkSuiteView[] }) {
   if (suites.length === 0) return null;
   return (
     <>
-      <section className="mx-auto flex max-w-[1240px] flex-wrap items-start justify-between gap-x-6 gap-y-3 px-5 pt-9 sm:px-8">
-        <p className="max-w-[80ch] text-[14px] leading-[1.5] text-ink-2">
-          Use a column&apos;s sort arrows to rank by it (again to reverse), open a row for its run
-          record, and pick the metrics to show. MAE, RMSE and CRPS are in cases and only comparable
-          within one suite; normalised CRPS is the cross-dataset figure.
-        </p>
+      <section className="mx-auto flex max-w-[1240px] justify-end px-5 pt-9 sm:px-8">
         <MetricPicker
           columns={columns}
           selected={shown}
