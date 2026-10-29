@@ -67,8 +67,31 @@ describe("toBenchmarks", () => {
           coverage_10_90: 0.66,
           mape: 25.2,
         },
+        comparisons: {},
       },
     ]);
+  });
+
+  it("keeps comparisons with done baselines, by baseline name", () => {
+    const run = {
+      ...backtest(),
+      comparisons: [
+        { configuredModelId: 31, values: { crps: 0.25, mae: null } },
+        { configuredModelId: 32, values: { crps: -0.5, mae: 0.1 } },
+      ],
+    };
+    const baseline = (id: number, name: string, status: string) => ({
+      status,
+      configuredModel: { id, name, modelTemplate: { displayName: null } },
+    });
+    const { records } = toBenchmarks(registry, suite, {
+      ...spec(run),
+      baselines: [
+        baseline(31, "seasonal_median", "done"),
+        baseline(32, "persistence", "failed"),
+      ],
+    });
+    expect(records[0].comparisons).toEqual({ seasonal_median: { crps: 0.25 } });
   });
 
   it("keeps only the newest backtest per configured model", () => {

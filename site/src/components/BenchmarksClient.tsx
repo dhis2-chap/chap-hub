@@ -11,15 +11,17 @@ import { useEffect, useRef, useState } from "react";
 import type { BenchmarkRowView, BenchmarkSuiteView } from "@/lib/benchmarks";
 import {
   DEFAULT_METRIC_COLUMNS,
+  formatComparison,
   metricRankKey,
   type MetricColumn,
 } from "@/lib/metrics";
+import type { Baseline } from "@/lib/schema";
 
 /**
  * The benchmark suites, one table after another, each row opening its
  * run record in a centred modal so the full metric list stays out of the
- * page flow. The shown metrics, sorting and the open row are the only
- * client state; everything rendered comes from the build-time suite views.
+ * page flow. The shown metrics, the baseline compared with, sorting and
+ * the open row are the only client state; everything rendered comes from the build-time suite views.
  */
 
 /** Remembers the visitor's metric picks; storage may be unavailable. */
@@ -403,9 +405,11 @@ function RunRecordModal({
 function SuiteTable({
   suite,
   shown,
+  baseline,
 }: {
   suite: BenchmarkSuiteView;
   shown: string[];
+  baseline: Baseline | null;
 }) {
   // Ranked by the first shown metric, best first, until a sorter is used;
   // using the ranked column's sorter again flips the direction.
@@ -418,9 +422,17 @@ function SuiteTable({
   // A sort column the visitor has since hidden falls back to the first shown.
   const sortColumn =
     columns.find((c) => c.id === sortPick) ?? columns[0] ?? null;
+  const comparison = (row: BenchmarkRowView, id: string) =>
+    baseline ? row.comparisons[baseline.id]?.[id] : undefined;
+  // A comparison is signed so positive is better, so it ranks by its negation.
   const rankOf = (row: BenchmarkRowView) => {
-    const v = sortColumn ? row.values[sortColumn.id] : undefined;
-    return v === undefined ? undefined : metricRankKey(sortColumn!, v);
+    if (!sortColumn) return undefined;
+    if (baseline) {
+      const c = comparison(row, sortColumn.id);
+      return c === undefined ? undefined : -c;
+    }
+    const v = row.values[sortColumn.id];
+    return v === undefined ? undefined : metricRankKey(sortColumn, v);
   };
   // Rows without a value for the ranked metric stay last either way.
   const compare = (a: BenchmarkRowView, b: BenchmarkRowView) => {
@@ -564,16 +576,29 @@ function SuiteTable({
                     row.versionTag
                   )}
                 </td>
-                {columns.map((c) => (
-                  <td
-                    key={c.id}
-                    className={`text-right font-mono ${
-                      sortColumn?.id === c.id ? "text-ink" : "text-ink-2"
-                    }`}
-                  >
-                    {valueOf(row, c.id)}
-                  </td>
-                ))}
+                {columns.map((c) => {
+                  const v = comparison(row, c.id);
+                  return (
+                    <td
+                      key={c.id}
+                      className={`text-right font-mono ${
+                        v !== undefined && v > 0
+                          ? "text-verified"
+                          : v !== undefined && v < 0
+                            ? "text-danger"
+                            : sortColumn?.id === c.id
+                              ? "text-ink"
+                              : "text-ink-2"
+                      }`}
+                    >
+                      {baseline
+                        ? v === undefined
+                          ? "—"
+                          : formatComparison(c, v)
+                        : valueOf(row, c.id)}
+                    </td>
+                  );
+                })}
                 <td>
                   <span
                     className={`d2-tag ${
@@ -601,7 +626,13 @@ function SuiteTable({
   );
 }
 
-export function BenchmarkSuites({ suites }: { suites: BenchmarkSuiteView[] }) {
+export function BenchmarkSuites({
+  suites,
+  baselines,
+}: {
+  suites: BenchmarkSuiteView[];
+  baselines: Baseline[];
+}) {
   // Every metric any suite records, in chap-core's default order.
   const columns = [
     ...new Map(suites.flatMap((s) => s.columns).map((c) => [c.id, c])).values(),
@@ -610,6 +641,8 @@ export function BenchmarkSuites({ suites }: { suites: BenchmarkSuiteView[] }) {
     columns.some((c) => c.id === id),
   );
   const [shown, setShown] = useState(defaults);
+  const [baselineId, setBaselineId] = useState("");
+  const baseline = baselines.find((b) => b.id === baselineId) ?? null;
 
   // Restored after hydration so the prerendered table matches the first render.
   useEffect(() => {
@@ -622,7 +655,24 @@ export function BenchmarkSuites({ suites }: { suites: BenchmarkSuiteView[] }) {
   if (suites.length === 0) return null;
   return (
     <>
-      <section className="mx-auto flex max-w-[1240px] justify-end px-5 pt-9 sm:px-8">
+      <section className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-end gap-3 px-5 pt-9 sm:px-8">
+        {baselines.length > 0 ? (
+          <label className="flex items-center gap-2 text-[14px] text-ink-2">
+            Compare with
+            <select
+              className="d2-input d2-input-dense w-auto"
+              value={baselineId}
+              onChange={(e) => setBaselineId(e.target.value)}
+            >
+              <option value="">No baseline</option>
+              {baselines.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <MetricPicker
           columns={columns}
           selected={shown}
@@ -632,6 +682,13 @@ export function BenchmarkSuites({ suites }: { suites: BenchmarkSuiteView[] }) {
           }}
         />
       </section>
+      {baseline ? (
+        <p className="mx-auto max-w-[1240px] px-5 pt-3 text-right text-[13px] text-ink-2 sm:px-8">
+          Scores compared with the {baseline.name} baseline: positive is
+          better than it, negative worse. Percentages are relative
+          improvements; the rest are in the metric&apos;s units.
+        </p>
+      ) : null}
       {suites.map((suite) => (
         <section
           key={suite.dataset}
@@ -640,7 +697,7 @@ export function BenchmarkSuites({ suites }: { suites: BenchmarkSuiteView[] }) {
           <h2 className="mb-2 text-[20px] font-medium text-ink">
             {suite.heading}
           </h2>
-          <SuiteTable suite={suite} shown={shown} />
+          <SuiteTable suite={suite} shown={shown} baseline={baseline} />
         </section>
       ))}
     </>

@@ -1,5 +1,10 @@
 import type { Registry } from "./registry";
-import type { Benchmark, BenchmarkResults, MetricInfo } from "./schema";
+import type {
+  Baseline,
+  Benchmark,
+  BenchmarkResults,
+  MetricInfo,
+} from "./schema";
 
 /**
  * Benchmark results come from the benchmarking server's chap API, read at
@@ -41,7 +46,31 @@ export interface Specification {
       name: string;
       modelTemplate: { name: string; sourceDigest: string | null };
     };
+    /** Per reference model; null on chap-core before 2.6. */
+    comparisons?: {
+      configuredModelId: number;
+      values: Record<string, number | null>;
+    }[] | null;
   }[];
+  /** chap-core's built-in baselines run on this specification. */
+  baselines?: {
+    status: string;
+    configuredModel: {
+      id: number;
+      name: string;
+      modelTemplate: { displayName: string | null };
+    };
+  }[] | null;
+}
+
+/** The specification's baselines that have scores to compare with. */
+function toBaselines(spec: Specification): Baseline[] {
+  return (spec.baselines ?? [])
+    .filter((b) => b.status === "done")
+    .map((b) => ({
+      id: b.configuredModel.name,
+      name: b.configuredModel.modelTemplate.displayName || b.configuredModel.name,
+    }));
 }
 
 /**
@@ -60,6 +89,11 @@ export function toBenchmarks(
   const records: Benchmark[] = [];
   const skipped: string[] = [];
   const seen = new Set<number>();
+  const baselines = new Map(
+    (spec.baselines ?? [])
+      .filter((b) => b.status === "done")
+      .map((b) => [b.configuredModel.id, b.configuredModel.name]),
+  );
 
   for (const backtest of spec.backtests) {
     const cm = backtest.configuredModel;
@@ -104,9 +138,25 @@ export function toBenchmarks(
         splits: suite.nSplits,
       },
       metrics: { ...metrics, crps: metrics.crps },
+      comparisons: Object.fromEntries(
+        (backtest.comparisons ?? []).flatMap((c) => {
+          const baseline = baselines.get(c.configuredModelId);
+          return baseline ? [[baseline, finiteValues(c.values)]] : [];
+        }),
+      ),
     });
   }
   return { records, skipped };
+}
+
+function finiteValues(
+  values: Record<string, number | null>,
+): Record<string, number> {
+  return Object.fromEntries(
+    Object.entries(values).filter(
+      (e): e is [string, number] => Number.isFinite(e[1]),
+    ),
+  );
 }
 
 /**
@@ -127,6 +177,7 @@ export async function fetchBenchmarks(
   }
 
   const records: Benchmark[] = [];
+  const baselines = new Map<string, Baseline>();
   let anyBacktest: number | null = null;
   for (const suite of SUITES) {
     const query = new URLSearchParams({
@@ -155,14 +206,17 @@ export async function fetchBenchmarks(
         skipped.map((s) => `\n  - ${s}`).join(""),
     );
     records.push(...found);
+    for (const b of toBaselines(spec)) baselines.set(b.id, b);
   }
-  if (anyBacktest === null) return { metrics: [], results: records };
+  if (anyBacktest === null)
+    return { metrics: [], baselines: [], results: records };
 
   // chap-core's metric registry: the same whichever backtest is asked about.
   const all = await get<MetricInfo[]>(`/v1/visualization/metrics/${anyBacktest}`);
   const used = new Set(records.flatMap((r) => Object.keys(r.metrics)));
   return {
     metrics: all.filter((m) => used.has(m.id)),
+    baselines: [...baselines.values()],
     results: records,
   };
 }
