@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BenchmarkSuites } from "@/components/BenchmarksClient";
 import {
   buildBenchmarkSuites,
+  getBaselines,
   getBenchmarks,
   getMetricDefinitions,
 } from "@/lib/benchmarks";
@@ -106,7 +107,7 @@ export default function BenchmarksPage() {
         </div>
       </section>
 
-      <BenchmarkSuites suites={suites} />
+      <BenchmarkSuites suites={suites} baselines={getBaselines()} />
 
       {suites.length > 0 ? (
         <section className="mx-auto max-w-[1240px] px-5 sm:px-8 pt-9">

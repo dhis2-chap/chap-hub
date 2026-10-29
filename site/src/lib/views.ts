@@ -325,6 +325,7 @@ function versionComparison(
       target: m.target,
       targetBehavior: m.targetBehavior,
       optimizationDirection: m.optimizationDirection,
+      comparisonOp: m.comparisonOp,
     }));
   // A column's best rank key, or null when every run ties (nothing to mark).
   const bestKey = columns.map((c) => {

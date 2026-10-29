@@ -11,6 +11,8 @@ export interface MetricColumn {
   target: number | null;
   targetBehavior: string;
   optimizationDirection: "minimize" | "maximize" | null;
+  /** How chap-core compares a score with a baseline's, e.g. "skill_ratio". */
+  comparisonOp: string | null;
 }
 
 /**
@@ -65,4 +67,17 @@ export function metricRankKey(column: MetricColumn, value: number): number {
       : Math.abs(value - column.target);
   }
   return column.optimizationDirection === "maximize" ? -value : value;
+}
+
+/**
+ * A comparison with a baseline, signed so positive is better whatever the
+ * metric's direction: a skill ratio as a percentage, anything else in the
+ * metric's units.
+ */
+export function formatComparison(column: MetricColumn, value: number): string {
+  return value.toLocaleString("en-US", {
+    maximumSignificantDigits: 3,
+    signDisplay: "exceptZero",
+    ...(column.comparisonOp === "skill_ratio" ? { style: "percent" } : {}),
+  });
 }

@@ -8,6 +8,7 @@ import {
   RESULTS_FILE,
 } from "./benchmarks";
 import {
+  formatComparison,
   inMetricOrder,
   metricRankKey,
   type MetricColumn,
@@ -31,6 +32,7 @@ function metric(id: string, displayName: string): MetricInfo {
     target: null,
     targetBehavior: "closest",
     optimizationDirection: "minimize",
+    comparisonOp: "skill_ratio",
   };
 }
 
@@ -50,6 +52,7 @@ function benchmark(overrides: Partial<Benchmark> = {}): Benchmark {
     evaluated_at: "2026-08-31",
     harness: { tool: "chap evaluate-ensemble" },
     metrics: { crps: 0.5 },
+    comparisons: {},
     ...overrides,
   } as Benchmark;
 }
@@ -93,7 +96,11 @@ describe("loadBenchmarks", () => {
   }
 
   it("returns nothing when no results were fetched", () => {
-    expect(loadBenchmarks(registry, root)).toEqual({ metrics: [], results: [] });
+    expect(loadBenchmarks(registry, root)).toEqual({
+      metrics: [],
+      baselines: [],
+      results: [],
+    });
   });
 
   it("loads valid records and the metric definitions", () => {
@@ -253,6 +260,7 @@ describe("metricRankKey", () => {
     target: null,
     targetBehavior: "closest",
     optimizationDirection: "minimize",
+    comparisonOp: "skill_ratio",
     ...overrides,
   });
 
@@ -260,6 +268,11 @@ describe("metricRankKey", () => {
     expect(metricRankKey(column({}), 3)).toBeLessThan(metricRankKey(column({}), 4));
     const max = column({ optimizationDirection: "maximize" });
     expect(metricRankKey(max, 4)).toBeLessThan(metricRankKey(max, 3));
+  });
+
+  it("formats a comparison signed, a skill ratio as a percentage", () => {
+    expect(formatComparison(column({}), 0.123)).toBe("+12.3%");
+    expect(formatComparison(column({ comparisonOp: "target_distance" }), -0.05)).toBe("-0.05");
   });
 
   it("ranks by distance to a target, either side", () => {
