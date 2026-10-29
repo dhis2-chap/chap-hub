@@ -35,6 +35,13 @@ export const PRESENTATION: Record<string, Presentation> = {
     shortName: "Rwanda BYM",
     abbrev: "BYM",
   },
+  chapkit_ghr_model: {
+    framework: "R · INLA",
+    language: "R",
+    covMode: "climate",
+    shortName: "GHRmodel",
+    abbrev: "GHR",
+  },
   chapkit_simple_multistep_model: {
     framework: "Python · scikit-learn + skpro",
     language: "Python",
