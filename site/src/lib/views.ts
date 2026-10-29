@@ -248,12 +248,6 @@ export interface ModelDetailView {
   inReviewAsOf: string | null;
   configurations: ConfigurationView[];
   benchmarks: BenchmarksView | null;
-  /** Cross-model benchmark state for the CTA card; null while no run exists. */
-  benchmarkSummary: {
-    measured: number;
-    listed: number;
-    suiteNames: string[];
-  } | null;
   verifiedPins: number;
   reviews: number;
   installUrl: string;
@@ -470,16 +464,6 @@ export function toDetailView(
       }),
     ),
     benchmarks: benchmarksView(model, registry, benchmarks, metrics),
-    benchmarkSummary:
-      benchmarks.length > 0
-        ? {
-            measured: new Set(benchmarks.map((b) => b.model)).size,
-            listed: registry.models.length,
-            suiteNames: [
-              ...new Set(benchmarks.map((b) => datasetNameFor(b.dataset))),
-            ],
-          }
-        : null,
     verifiedPins,
     reviews: verifiedPins * required,
     installUrl:
