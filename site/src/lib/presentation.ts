@@ -17,8 +17,6 @@ export interface Presentation {
   covMode: CovariateMode;
   /** Short name for tight chart labels. */
   shortName: string;
-  /** Very short name for bar-chart tick labels. */
-  abbrev: string;
 }
 
 export const COV_LABEL: Record<CovariateMode, string> = {
@@ -33,42 +31,36 @@ export const PRESENTATION: Record<string, Presentation> = {
     language: "R",
     covMode: "climate",
     shortName: "Rwanda BYM",
-    abbrev: "BYM",
   },
   chapkit_ghr_model: {
     framework: "R · INLA",
     language: "R",
     covMode: "climate",
     shortName: "GHRmodel",
-    abbrev: "GHR",
   },
   chapkit_simple_multistep_model: {
     framework: "Python · scikit-learn + skpro",
     language: "Python",
     covMode: "both",
     shortName: "Simple Multistep",
-    abbrev: "Multi",
   },
   auto_arima_chapkit: {
     framework: "R · fable",
     language: "R",
     covMode: "none",
     shortName: "Auto-ARIMA",
-    abbrev: "ARIMA",
   },
   chapkit_minimalist_example_py: {
     framework: "Python · scikit-learn",
     language: "Python",
     covMode: "none",
     shortName: "Minimalist (Py)",
-    abbrev: "Min-py",
   },
   chapkit_minimalist_example_r: {
     framework: "R · lm()",
     language: "R",
     covMode: "none",
     shortName: "Minimalist (R)",
-    abbrev: "Min-R",
   },
 };
 
@@ -79,7 +71,6 @@ export function presentationFor(id: string): Presentation {
       language: "Python",
       covMode: "both",
       shortName: id,
-      abbrev: id.slice(0, 6),
     }
   );
 }

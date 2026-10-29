@@ -186,10 +186,6 @@ export interface ConfigurationView {
 }
 
 export interface BenchmarksView {
-  /** Each model's best configuration on the primary record's dataset. */
-  comparison: { name: string; crps: number; self: boolean }[];
-  /** The dataset `comparison` is measured on. */
-  comparisonDataset: string;
   /** Every recorded run of the model, one table per dataset. */
   byVersion: VersionComparisonView[];
 }
@@ -289,47 +285,15 @@ function configCurl(key: string, config: Record<string, unknown>): string {
 
 function benchmarksView(
   model: Model,
-  registry: Registry,
   benchmarks: Benchmark[],
   metrics: MetricInfo[],
 ): BenchmarksView | null {
   const records = recordsFor(model, benchmarks);
-  const first = records[0];
-  if (!first) return null;
-  // Several configurations of one pin can run on a dataset and the server
-  // picks no winner, so the page shows the best one and names it.
-  const best = (rs: Benchmark[]) =>
-    rs.reduce<Benchmark | null>(
-      (a, b) => (a && a.metrics.crps <= b.metrics.crps ? a : b),
-      null,
-    );
-  const primary = best(
-    records.filter(
-      (b) => b.dataset === first.dataset && b.version === first.version,
-    ),
-  )!;
-
-  const comparison = registry.models
-    .map((m) => {
-      const top = best(
-        benchmarksFor(benchmarks, m.id).filter(
-          (b) => b.dataset === primary.dataset,
-        ),
-      );
-      return top
-        ? { name: presentationFor(m.id).abbrev, crps: top.metrics.crps, self: m.id === model.id }
-        : null;
-    })
-    .filter((c) => c !== null);
-
-  const byVersion = [...new Set(records.map((b) => b.dataset))]
-    .sort()
-    .map((dataset) => versionComparison(model, dataset, records, metrics));
-
+  if (records.length === 0) return null;
   return {
-    comparison: comparison.length > 1 ? comparison : [],
-    comparisonDataset: datasetNameFor(primary.dataset),
-    byVersion,
+    byVersion: [...new Set(records.map((b) => b.dataset))]
+      .sort()
+      .map((dataset) => versionComparison(model, dataset, records, metrics)),
   };
 }
 
@@ -463,7 +427,7 @@ export function toDetailView(
         curl: configCurl(key, configuration.config),
       }),
     ),
-    benchmarks: benchmarksView(model, registry, benchmarks, metrics),
+    benchmarks: benchmarksView(model, benchmarks, metrics),
     verifiedPins,
     reviews: verifiedPins * required,
     installUrl:

@@ -8,7 +8,6 @@ import type { ModelDetailView } from "@/lib/views";
 import { ChannelChip, StatusBadge } from "./badges";
 import { CodePanel } from "./CodePanel";
 import { CopyButton } from "./copy";
-import { ComparisonChart } from "./charts";
 
 type Tab = "overview" | "versions" | "configs" | "benchmarks" | "install";
 
@@ -358,16 +357,6 @@ function BenchmarksTab({ view }: { view: ModelDetailView }) {
           </div>
         </div>
       ))}
-      <div className="grid gap-5 lg:grid-cols-2">
-        {b.comparison.length > 0 ? (
-          <div className="d2-card p-5">
-            <div className="mb-3 font-medium text-ink">
-              Model comparison · {b.comparisonDataset} · best configuration each
-            </div>
-            <ComparisonChart items={b.comparison} />
-          </div>
-        ) : null}
-      </div>
       <Link
         href="/benchmarks"
         className="mt-5 inline-block font-medium text-brand hover:underline"

@@ -160,8 +160,8 @@ export default function BenchmarksPage() {
       <section className="mx-auto max-w-[1240px] px-5 sm:px-8 pb-24 pt-9">
         <div className="flex flex-wrap items-center justify-between gap-5 border-t border-line pt-5">
           <span className="text-[13px] text-ink-2">
-            Each model&apos;s detail page shows its best configuration&apos;s
-            metrics and how it compares with the other listed models.
+            Each model&apos;s detail page compares its versions on every
+            dataset.
           </span>
           <Link
             href="/"
